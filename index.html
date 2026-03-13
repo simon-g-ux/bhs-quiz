@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="version" content="0.2.0" />
+  <meta name="version" content="0.3.0" />
   <title>Horse Quiz — BHS Stage 1 Practice</title>
 
   <!-- Fonts -->
@@ -87,8 +87,17 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    @keyframes shimmer {
+      0%   { width: 0%; }
+      50%  { width: 100%; }
+      100% { width: 0%; }
+    }
+
+    @keyframes gallop {
+      0%, 100% { transform: translateX(0) scaleX(-1); }
+      25%  { transform: translateX(4px) scaleX(-1) translateY(-3px); }
+      50%  { transform: translateX(8px) scaleX(-1); }
+      75%  { transform: translateX(4px) scaleX(-1) translateY(-3px); }
     }
 
     .animate-scale-in {
@@ -97,10 +106,6 @@
 
     .animate-fade-in {
       animation: fadeIn 0.3s ease-out forwards;
-    }
-
-    .animate-spin {
-      animation: spin 0.8s linear infinite;
     }
 
     .stagger-1 { animation-delay: 0.05s; }
@@ -118,7 +123,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useCallback, useRef } = React;
+    const { useState, useCallback, useEffect, useRef } = React;
 
     const TOTAL_QUESTIONS = 3;
 
@@ -136,12 +141,56 @@
       return data;
     }
 
-    // ─── Spinner ──────────────────────────────────────────────────
-    function Spinner({ message }) {
+    // ─── Horse Facts ──────────────────────────────────────────────
+    const HORSE_FACTS = [
+      "Horses can sleep both lying down and standing up.",
+      "A horse's teeth take up more space in their head than their brain.",
+      "Horses can run within hours of being born.",
+      "The fastest recorded horse speed was 70.76 km/h.",
+      "Horses have the largest eyes of any land mammal.",
+      "A horse's heart weighs roughly 4.5 kg.",
+      "Horses can see nearly 360 degrees around them.",
+      "The oldest known horse lived to 62 years old.",
+      "Horses drink at least 25 litres of water a day.",
+      "A horse has about 205 bones in its skeleton.",
+      "Horses produce around 10 gallons of saliva a day.",
+      "The hoof is essentially a giant fingernail.",
+      "Horses can't breathe through their mouths.",
+      "A group of horses will not all sleep at the same time.",
+      "Horses have 16 muscles in each ear.",
+    ];
+
+    // ─── Loading Modal ────────────────────────────────────────────
+    function LoadingModal() {
+      const [factIndex, setFactIndex] = useState(0);
+      const [shuffled] = useState(() =>
+        [...HORSE_FACTS].sort(() => Math.random() - 0.5)
+      );
+
+      useEffect(() => {
+        const timer = setInterval(() => {
+          setFactIndex(prev => (prev + 1) % shuffled.length);
+        }, 3500);
+        return () => clearInterval(timer);
+      }, [shuffled]);
+
       return (
-        <div className="flex flex-col items-center justify-center py-2xl gap-md">
-          <div className="w-[32px] h-[32px] border-[3px] border-border-default border-t-action-primary rounded-full animate-spin" />
-          <p className="font-body text-sm text-text-muted">{message}</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(2.5px)', WebkitBackdropFilter: 'blur(2.5px)' }}>
+          <div className="mx-6 rounded-card p-[3px]" style={{ maxWidth: '315px', width: '100%', background: 'linear-gradient(135deg, #B4D4B8, #F0A0A8, #FFF3E1)', boxShadow: '0 0 60px rgba(240, 160, 168, 0.4)' }}>
+            <div className="rounded-[13px] p-6 pb-8 flex flex-col items-center gap-6" style={{ height: '170px', background: 'rgba(250, 249, 246, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+              <div className="flex-1 flex items-center justify-center">
+                <p className="font-body font-normal text-lg text-center" style={{ maxWidth: '250px' }} key={factIndex}>
+                  <span className="animate-fade-in block">{shuffled[factIndex]}</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-sm w-full" style={{ maxWidth: '250px' }}>
+                <span className="text-xl" style={{ animation: 'gallop 0.6s ease-in-out infinite' }}>🐎</span>
+                <div className="flex-1 h-2 rounded-pill border border-border-control overflow-hidden">
+                  <div className="h-full rounded-pill" style={{ background: 'linear-gradient(160deg, rgba(180, 212, 184, 0.2) 15%, #B4D4B8 82%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       );
     }
@@ -181,85 +230,45 @@
       );
     }
 
-    // ─── Feedback Bar ─────────────────────────────────────────────
-    function FeedbackBar({ verdict, feedback, correctAnswer }) {
-      const styles = {
-        correct: {
-          border: 'border-sage',
-          stripe: 'bg-sage',
-          bg: 'bg-[rgba(180,212,184,0.2)]',
-          label: 'Correct',
-        },
-        partial: {
-          border: 'border-bg-card',
-          stripe: 'bg-bg-card',
-          bg: 'bg-[rgba(255,243,225,0.4)]',
-          label: 'Partially correct',
-        },
-        incorrect: {
-          border: 'border-rose',
-          stripe: 'bg-[#E08C95]',
-          bg: 'bg-[rgba(240,160,168,0.2)]',
-          label: 'Incorrect',
-        },
-      };
-
-      const s = styles[verdict] || styles.incorrect;
-
-      return (
-        <div className={`flex overflow-hidden rounded-card-sm border ${s.border}`}>
-          <div className={`w-[12px] flex-shrink-0 ${s.stripe}`} />
-          <div className={`flex-1 flex flex-col gap-sm px-md py-lg border-l border-border-default ${s.bg}`}>
-            <p className="font-heading font-bold text-base text-text-title">
-              {s.label}
-            </p>
-            <p className="font-body text-sm text-text-title leading-[20px]">
-              {feedback}
-            </p>
-            {verdict !== 'correct' && (
-              <p className="font-body text-sm text-text-muted leading-[20px] mt-xs">
-                <span className="font-semibold">Answer:</span> {correctAnswer}
-              </p>
-            )}
-          </div>
-        </div>
-      );
-    }
-
     // ─── Question Input ───────────────────────────────────────────
-    function QuestionInput({ onSubmit, submitting }) {
+    function QuestionInput({ onSubmit, isLast }) {
       const [value, setValue] = useState('');
+      const textareaRef = useRef(null);
+
+      useEffect(() => {
+        if (textareaRef.current) textareaRef.current.focus();
+      }, []);
 
       function handleSubmit(e) {
         e.preventDefault();
-        if (value.trim() && !submitting) {
-          onSubmit(value.trim());
-        }
+        if (value.trim()) onSubmit(value.trim());
       }
 
       return (
         <form onSubmit={handleSubmit} className="flex flex-col gap-smd">
           <textarea
+            ref={textareaRef}
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder="Type your answer..."
-            disabled={submitting}
             rows={3}
             className="w-full px-md py-smd rounded-card-sm border border-border-default bg-bg-element font-body text-base text-text-body placeholder:text-text-muted resize-none focus:outline-none focus:border-border-accent transition-colors"
           />
           <Button
             onClick={handleSubmit}
-            disabled={!value.trim() || submitting}
+            disabled={!value.trim()}
             className="w-full"
           >
-            {submitting ? 'Checking...' : 'Submit Answer'}
+            {isLast ? 'Submit & See Results' : 'Submit & Next'}
           </Button>
         </form>
       );
     }
 
     // ─── Question Card ─────────────────────────────────────────────
-    function QuestionCard({ questionData, questionIndex, totalQuestions, onSubmitAnswer, onNext, questionState, answerResult }) {
+    function QuestionCard({ questionData, questionIndex, totalQuestions, onSubmitAnswer }) {
+      const isLast = questionIndex === totalQuestions - 1;
+
       return (
         <div className="animate-scale-in">
           <div className="mb-lg">
@@ -278,32 +287,7 @@
             {questionData.question}
           </h2>
 
-          {questionState === 'answering' && (
-            <QuestionInput onSubmit={onSubmitAnswer} submitting={false} />
-          )}
-
-          {questionState === 'submitting' && (
-            <div>
-              <QuestionInput onSubmit={() => {}} submitting={true} />
-              <Spinner message="Checking your answer..." />
-            </div>
-          )}
-
-          {questionState === 'feedback' && answerResult && (
-            <div className="animate-fade-in flex flex-col gap-lg">
-              <FeedbackBar
-                verdict={answerResult.verdict}
-                feedback={answerResult.feedback}
-                correctAnswer={answerResult.correctAnswer}
-              />
-
-              <div className="flex justify-end">
-                <Button onClick={onNext}>
-                  {questionIndex < totalQuestions - 1 ? 'Next' : 'See Results'}
-                </Button>
-              </div>
-            </div>
-          )}
+          <QuestionInput onSubmit={onSubmitAnswer} isLast={isLast} />
         </div>
       );
     }
@@ -346,6 +330,71 @@
       );
     }
 
+    // ─── Result Accordion Item ─────────────────────────────────────
+    function ResultItem({ question, answer, index }) {
+      const [open, setOpen] = useState(false);
+
+      const styles = {
+        correct: { border: 'border-sage', stripe: 'bg-sage', bg: 'bg-[rgba(180,212,184,0.2)]', label: 'Correct' },
+        partial: { border: 'border-bg-card', stripe: 'bg-bg-card', bg: 'bg-[rgba(255,243,225,0.4)]', label: 'Partial' },
+        incorrect: { border: 'border-rose', stripe: 'bg-[#E08C95]', bg: 'bg-[rgba(240,160,168,0.2)]', label: 'Incorrect' },
+      };
+      const s = styles[answer.verdict] || styles.incorrect;
+
+      const verdictBadgeStyles = {
+        correct: 'bg-sage text-text-title',
+        partial: 'bg-bg-card text-text-title',
+        incorrect: 'bg-[rgba(240,160,168,0.4)] text-text-title',
+      };
+
+      return (
+        <div
+          className={`animate-fade-in flex overflow-hidden rounded-card-sm border ${s.border} cursor-pointer`}
+          style={{ animationDelay: `${index * 0.08}s`, opacity: 0 }}
+          onClick={() => setOpen(!open)}
+        >
+          <div className={`w-[12px] flex-shrink-0 ${s.stripe}`} />
+          <div className={`flex-1 flex flex-col px-md py-lg border-l border-border-default ${s.bg}`}>
+            <div className="flex items-start justify-between gap-sm">
+              <div className="flex-1 min-w-0">
+                <p className="font-body text-xs text-text-muted mb-xs">{question.topic}</p>
+                <p className="font-body font-semibold text-base text-text-title leading-snug">
+                  {question.question}
+                </p>
+              </div>
+              <div className="flex items-center gap-xs flex-shrink-0 mt-xs">
+                <span className={`font-body text-xs font-bold px-sm py-xs rounded-pill ${verdictBadgeStyles[answer.verdict]}`}>
+                  {s.label}
+                </span>
+                <span className={`text-text-muted text-sm transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
+                  &#9662;
+                </span>
+              </div>
+            </div>
+
+            {open && (
+              <div className="animate-fade-in mt-smd flex flex-col gap-sm">
+                <div className="pt-smd border-t border-border-default">
+                  <p className="font-body text-xs text-text-muted mb-xs font-semibold">Your answer</p>
+                  <p className="font-body text-sm text-text-body leading-[20px]">{answer.userAnswer}</p>
+                </div>
+                <div>
+                  <p className="font-body text-xs text-text-muted mb-xs font-semibold">Feedback</p>
+                  <p className="font-body text-sm text-text-body leading-[20px]">{answer.feedback}</p>
+                </div>
+                {answer.verdict !== 'correct' && (
+                  <div>
+                    <p className="font-body text-xs text-text-muted mb-xs font-semibold">Correct answer</p>
+                    <p className="font-body text-sm text-text-body leading-[20px]">{answer.correctAnswer}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     // ─── Results Screen ────────────────────────────────────────────
     function ResultsScreen({ questions, answers, onRestart }) {
       const correctCount = answers.filter(a => a.verdict === 'correct').length;
@@ -373,41 +422,18 @@
               </p>
             )}
             <p className="font-body text-base text-text-muted">{message}</p>
+            <p className="font-body text-xs text-text-muted mt-sm">Tap a question to see details</p>
           </div>
 
           <div className="flex flex-col gap-smd mb-xl">
-            {answers.map((answer, i) => {
-              const styles = {
-                correct: { border: 'border-sage', stripe: 'bg-sage', bg: 'bg-[rgba(180,212,184,0.2)]' },
-                partial: { border: 'border-bg-card', stripe: 'bg-bg-card', bg: 'bg-[rgba(255,243,225,0.4)]' },
-                incorrect: { border: 'border-rose', stripe: 'bg-[#E08C95]', bg: 'bg-[rgba(240,160,168,0.2)]' },
-              };
-              const s = styles[answer.verdict] || styles.incorrect;
-
-              return (
-                <div
-                  key={i}
-                  className={`animate-fade-in flex overflow-hidden rounded-card-sm border ${s.border}`}
-                  style={{ animationDelay: `${i * 0.08}s`, opacity: 0 }}
-                >
-                  <div className={`w-[12px] flex-shrink-0 ${s.stripe}`} />
-                  <div className={`flex-1 flex flex-col gap-sm px-md py-lg border-l border-border-default ${s.bg}`}>
-                    <p className="font-body text-xs text-text-muted">{questions[i].topic}</p>
-                    <p className="font-body font-semibold text-base text-text-title leading-snug">
-                      {questions[i].question}
-                    </p>
-                    <p className="font-body text-sm text-text-body leading-[20px]">
-                      {answer.feedback}
-                    </p>
-                    {answer.verdict !== 'correct' && (
-                      <p className="font-body text-sm text-text-muted leading-[20px]">
-                        <span className="font-semibold">Answer:</span> {answer.correctAnswer}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {answers.map((answer, i) => (
+              <ResultItem
+                key={i}
+                question={questions[i]}
+                answer={answer}
+                index={i}
+              />
+            ))}
           </div>
 
           <Button onClick={onRestart} className="w-full">
@@ -435,90 +461,64 @@
 
     // ─── App ───────────────────────────────────────────────────────
     function App() {
-      const [screen, setScreen] = useState('start');      // start | loading | quiz | results | error
+      const [screen, setScreen] = useState('start');   // start | quiz | results | error
       const [currentQ, setCurrentQ] = useState(0);
-      const [questions, setQuestions] = useState([]);      // { topic, question, expectedAnswer }
-      const [answers, setAnswers] = useState([]);          // { userAnswer, verdict, feedback, correctAnswer }
-      const [questionState, setQuestionState] = useState('loading'); // loading | answering | submitting | feedback
-      const [answerResult, setAnswerResult] = useState(null);
+      const [questions, setQuestions] = useState([]);
+      const [userAnswers, setUserAnswers] = useState([]);  // raw strings
+      const [results, setResults] = useState([]);          // { verdict, feedback, correctAnswer }
+      const [loading, setLoading] = useState(false);       // controls modal overlay
       const [errorMsg, setErrorMsg] = useState('');
-      const usedTopicsRef = useRef([]);
 
-      const generateNextQuestion = useCallback(async () => {
-        setQuestionState('loading');
+      const handleStart = useCallback(async () => {
+        setLoading(true);
+        setCurrentQ(0);
+        setQuestions([]);
+        setUserAnswers([]);
+        setResults([]);
         try {
-          const data = await quizAPI({
-            action: 'generate',
-            usedTopics: usedTopicsRef.current,
-          });
-          usedTopicsRef.current = [...usedTopicsRef.current, data.topic];
-          setQuestions(prev => [...prev, data]);
-          setQuestionState('answering');
+          const data = await quizAPI({ action: 'generate-all', count: TOTAL_QUESTIONS });
+          setQuestions(data.questions);
+          setLoading(false);
           setScreen('quiz');
         } catch (err) {
+          setLoading(false);
           setErrorMsg(err.message);
           setScreen('error');
         }
       }, []);
 
-      const handleStart = useCallback(() => {
-        setScreen('loading');
-        setCurrentQ(0);
-        setQuestions([]);
-        setAnswers([]);
-        setAnswerResult(null);
-        usedTopicsRef.current = [];
-        generateNextQuestion();
-      }, [generateNextQuestion]);
+      const handleSubmitAnswer = useCallback(async (answer) => {
+        const newAnswers = [...userAnswers, answer];
+        setUserAnswers(newAnswers);
 
-      const handleSubmitAnswer = useCallback(async (userAnswer) => {
-        setQuestionState('submitting');
-        const q = questions[currentQ];
-        try {
-          const result = await quizAPI({
-            action: 'check',
-            question: q.question,
-            expectedAnswer: q.expectedAnswer,
-            userAnswer,
-          });
-          setAnswerResult(result);
-          setAnswers(prev => [...prev, { userAnswer, ...result }]);
-          setQuestionState('feedback');
-        } catch (err) {
-          setErrorMsg(err.message);
-          setScreen('error');
-        }
-      }, [questions, currentQ]);
-
-      const handleNext = useCallback(() => {
         if (currentQ < TOTAL_QUESTIONS - 1) {
           setCurrentQ(prev => prev + 1);
-          setAnswerResult(null);
-          setScreen('loading');
-          generateNextQuestion();
         } else {
-          setScreen('results');
+          // Last question — batch check all
+          setLoading(true);
+          try {
+            const items = questions.map((q, i) => ({
+              question: q.question,
+              expectedAnswer: q.expectedAnswer,
+              userAnswer: newAnswers[i],
+            }));
+            const data = await quizAPI({ action: 'check-all', items });
+            setResults(data.results.map((r, i) => ({ ...r, userAnswer: newAnswers[i] })));
+            setLoading(false);
+            setScreen('results');
+          } catch (err) {
+            setLoading(false);
+            setErrorMsg(err.message);
+            setScreen('error');
+          }
         }
-      }, [currentQ, generateNextQuestion]);
+      }, [userAnswers, currentQ, questions]);
 
       return (
         <div className="min-h-screen bg-bg-main flex items-start justify-center px-md py-xl">
           <div className="w-full max-w-[420px]">
             {screen === 'start' && (
               <StartScreen onStart={handleStart} />
-            )}
-            {screen === 'loading' && (
-              <div className="animate-scale-in">
-                <div className="mb-lg">
-                  <ProgressBar current={currentQ} total={TOTAL_QUESTIONS} />
-                  <div className="mt-smd">
-                    <span className="font-body text-sm text-text-muted">
-                      Question {currentQ + 1} of {TOTAL_QUESTIONS}
-                    </span>
-                  </div>
-                </div>
-                <Spinner message="Generating your question..." />
-              </div>
             )}
             {screen === 'quiz' && questions[currentQ] && (
               <QuestionCard
@@ -527,15 +527,12 @@
                 questionIndex={currentQ}
                 totalQuestions={TOTAL_QUESTIONS}
                 onSubmitAnswer={handleSubmitAnswer}
-                questionState={questionState}
-                answerResult={answerResult}
-                onNext={handleNext}
               />
             )}
             {screen === 'results' && (
               <ResultsScreen
                 questions={questions}
-                answers={answers}
+                answers={results}
                 onRestart={handleStart}
               />
             )}
@@ -543,6 +540,8 @@
               <ErrorScreen message={errorMsg} onRetry={handleStart} />
             )}
           </div>
+
+          {loading && <LoadingModal />}
         </div>
       );
     }
