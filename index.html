@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="version" content="0.2.0" />
+  <title>Horse Quiz — BHS Stage 1 Practice</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inria+Sans:wght@400;700&family=Aleo:wght@400;500;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'bg-main': '#FAF9F6',
+            'bg-card': '#FFF3E1',
+            'bg-element': '#FFFFFF',
+            'action-primary': '#F0A0A8',
+            'action-secondary': '#2D2D2D',
+            'text-title': '#2A2A2A',
+            'text-body': '#2A2A2A',
+            'text-muted': '#7A7875',
+            'text-on-primary': '#2A2A2A',
+            'text-on-secondary': '#F0A0A8',
+            'border-default': '#E1DFDC',
+            'border-control': '#2A2A2A',
+            'border-accent': '#F0A0A8',
+            'validation-green': '#08AE66',
+            'validation-red': '#AE081B',
+            'sage': '#B4D4B8',
+            'rose': '#F0A0A8',
+          },
+          fontFamily: {
+            heading: ['"Inria Sans"', 'serif'],
+            body: ['"Aleo"', 'serif'],
+          },
+          fontSize: {
+            'xs': '12px',
+            'sm': '14px',
+            'base': '16px',
+            'lg': '18px',
+            'xl': '20px',
+            '2xl': '24px',
+            '3xl': '28px',
+          },
+          spacing: {
+            'xs': '4px',
+            'sm': '8px',
+            'smd': '12px',
+            'md': '16px',
+            'lg': '24px',
+            'xl': '32px',
+            '2xl': '48px',
+          },
+          borderRadius: {
+            'sm': '4px',
+            'card-sm': '8px',
+            'card': '16px',
+            'pill': '48px',
+          },
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom styles -->
+  <style>
+    body {
+      background-color: #FAF9F6;
+      font-family: 'Aleo', serif;
+      color: #2A2A2A;
+    }
+
+    @keyframes scaleIn {
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .animate-scale-in {
+      animation: scaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out forwards;
+    }
+
+    .animate-spin {
+      animation: spin 0.8s linear infinite;
+    }
+
+    .stagger-1 { animation-delay: 0.05s; }
+    .stagger-2 { animation-delay: 0.1s; }
+    .stagger-3 { animation-delay: 0.15s; }
+    .stagger-4 { animation-delay: 0.2s; }
+  </style>
+
+  <!-- React 18 -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useCallback, useRef } = React;
+
+    const TOTAL_QUESTIONS = 3;
+
+    // ─── API Helper ───────────────────────────────────────────────
+    async function quizAPI(body) {
+      const res = await fetch('/.netlify/functions/quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Something went wrong');
+      }
+      return data;
+    }
+
+    // ─── Spinner ──────────────────────────────────────────────────
+    function Spinner({ message }) {
+      return (
+        <div className="flex flex-col items-center justify-center py-2xl gap-md">
+          <div className="w-[32px] h-[32px] border-[3px] border-border-default border-t-action-primary rounded-full animate-spin" />
+          <p className="font-body text-sm text-text-muted">{message}</p>
+        </div>
+      );
+    }
+
+    // ─── Button ────────────────────────────────────────────────────
+    function Button({ children, onClick, variant = 'primary', disabled = false, className = '' }) {
+      const base = 'font-heading font-bold text-lg px-xl py-smd rounded-pill transition-all duration-200 cursor-pointer select-none';
+      const variants = {
+        primary: 'bg-action-primary text-text-on-primary hover:brightness-95 active:scale-[0.97]',
+        secondary: 'bg-action-secondary text-text-on-secondary hover:brightness-110 active:scale-[0.97]',
+      };
+
+      return (
+        <button
+          onClick={onClick}
+          disabled={disabled}
+          className={`${base} ${variants[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+        >
+          {children}
+        </button>
+      );
+    }
+
+    // ─── Progress Bar ──────────────────────────────────────────────
+    function ProgressBar({ current, total }) {
+      return (
+        <div className="flex items-center gap-sm">
+          {Array.from({ length: total }, (_, i) => (
+            <div
+              key={i}
+              className={`h-[6px] flex-1 rounded-pill transition-all duration-300 ${
+                i < current ? 'bg-action-primary' : i === current ? 'bg-border-accent' : 'bg-border-default'
+              }`}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    // ─── Feedback Bar ─────────────────────────────────────────────
+    function FeedbackBar({ verdict, feedback, correctAnswer }) {
+      const styles = {
+        correct: {
+          border: 'border-sage',
+          stripe: 'bg-sage',
+          bg: 'bg-[rgba(180,212,184,0.2)]',
+          label: 'Correct',
+        },
+        partial: {
+          border: 'border-bg-card',
+          stripe: 'bg-bg-card',
+          bg: 'bg-[rgba(255,243,225,0.4)]',
+          label: 'Partially correct',
+        },
+        incorrect: {
+          border: 'border-rose',
+          stripe: 'bg-[#E08C95]',
+          bg: 'bg-[rgba(240,160,168,0.2)]',
+          label: 'Incorrect',
+        },
+      };
+
+      const s = styles[verdict] || styles.incorrect;
+
+      return (
+        <div className={`flex overflow-hidden rounded-card-sm border ${s.border}`}>
+          <div className={`w-[12px] flex-shrink-0 ${s.stripe}`} />
+          <div className={`flex-1 flex flex-col gap-sm px-md py-lg border-l border-border-default ${s.bg}`}>
+            <p className="font-heading font-bold text-base text-text-title">
+              {s.label}
+            </p>
+            <p className="font-body text-sm text-text-title leading-[20px]">
+              {feedback}
+            </p>
+            {verdict !== 'correct' && (
+              <p className="font-body text-sm text-text-muted leading-[20px] mt-xs">
+                <span className="font-semibold">Answer:</span> {correctAnswer}
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── Question Input ───────────────────────────────────────────
+    function QuestionInput({ onSubmit, submitting }) {
+      const [value, setValue] = useState('');
+
+      function handleSubmit(e) {
+        e.preventDefault();
+        if (value.trim() && !submitting) {
+          onSubmit(value.trim());
+        }
+      }
+
+      return (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-smd">
+          <textarea
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="Type your answer..."
+            disabled={submitting}
+            rows={3}
+            className="w-full px-md py-smd rounded-card-sm border border-border-default bg-bg-element font-body text-base text-text-body placeholder:text-text-muted resize-none focus:outline-none focus:border-border-accent transition-colors"
+          />
+          <Button
+            onClick={handleSubmit}
+            disabled={!value.trim() || submitting}
+            className="w-full"
+          >
+            {submitting ? 'Checking...' : 'Submit Answer'}
+          </Button>
+        </form>
+      );
+    }
+
+    // ─── Question Card ─────────────────────────────────────────────
+    function QuestionCard({ questionData, questionIndex, totalQuestions, onSubmitAnswer, onNext, questionState, answerResult }) {
+      return (
+        <div className="animate-scale-in">
+          <div className="mb-lg">
+            <ProgressBar current={questionIndex} total={totalQuestions} />
+            <div className="flex items-center justify-between mt-smd">
+              <span className="font-body text-sm text-text-muted">
+                Question {questionIndex + 1} of {totalQuestions}
+              </span>
+              <span className="font-body text-xs text-text-muted bg-bg-card px-sm py-xs rounded-pill">
+                {questionData.topic}
+              </span>
+            </div>
+          </div>
+
+          <h2 className="font-heading font-bold text-2xl text-text-title mb-lg leading-snug">
+            {questionData.question}
+          </h2>
+
+          {questionState === 'answering' && (
+            <QuestionInput onSubmit={onSubmitAnswer} submitting={false} />
+          )}
+
+          {questionState === 'submitting' && (
+            <div>
+              <QuestionInput onSubmit={() => {}} submitting={true} />
+              <Spinner message="Checking your answer..." />
+            </div>
+          )}
+
+          {questionState === 'feedback' && answerResult && (
+            <div className="animate-fade-in flex flex-col gap-lg">
+              <FeedbackBar
+                verdict={answerResult.verdict}
+                feedback={answerResult.feedback}
+                correctAnswer={answerResult.correctAnswer}
+              />
+
+              <div className="flex justify-end">
+                <Button onClick={onNext}>
+                  {questionIndex < totalQuestions - 1 ? 'Next' : 'See Results'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ─── Start Screen ──────────────────────────────────────────────
+    function StartScreen({ onStart }) {
+      return (
+        <div className="animate-scale-in text-center">
+          <div className="mb-2xl">
+            <span className="text-[64px] leading-none block mb-lg">🐴</span>
+            <h1 className="font-heading font-bold text-3xl text-text-title mb-smd">
+              Horse Quiz
+            </h1>
+            <p className="font-body text-lg text-text-muted max-w-[280px] mx-auto leading-relaxed">
+              Practice for your BHS Stage 1 exam
+            </p>
+          </div>
+
+          <div className="bg-bg-card rounded-card p-lg mb-xl">
+            <div className="flex items-center justify-between text-sm font-body text-text-body">
+              <span>Questions</span>
+              <span className="font-bold">3</span>
+            </div>
+            <div className="h-px bg-border-default my-smd" />
+            <div className="flex items-center justify-between text-sm font-body text-text-body">
+              <span>Type</span>
+              <span className="font-bold">AI-generated, open-ended</span>
+            </div>
+            <div className="h-px bg-border-default my-smd" />
+            <div className="flex items-center justify-between text-sm font-body text-text-body">
+              <span>Topics</span>
+              <span className="font-bold">Random BHS Stage 1</span>
+            </div>
+          </div>
+
+          <Button onClick={onStart} className="w-full">
+            Start Quiz
+          </Button>
+        </div>
+      );
+    }
+
+    // ─── Results Screen ────────────────────────────────────────────
+    function ResultsScreen({ questions, answers, onRestart }) {
+      const correctCount = answers.filter(a => a.verdict === 'correct').length;
+      const partialCount = answers.filter(a => a.verdict === 'partial').length;
+      const total = answers.length;
+
+      const score = correctCount + (partialCount * 0.5);
+      const emoji = score >= total ? '🎉' : score >= total / 2 ? '👏' : '📚';
+      const message = score >= total
+        ? "Perfect score — you're ready!"
+        : score >= total / 2
+        ? 'Good effort, keep practising!'
+        : "Keep going — you'll get there!";
+
+      return (
+        <div className="animate-scale-in">
+          <div className="text-center mb-xl">
+            <span className="text-[48px] leading-none block mb-md">{emoji}</span>
+            <h1 className="font-heading font-bold text-3xl text-text-title mb-sm">
+              {correctCount} of {total} correct
+            </h1>
+            {partialCount > 0 && (
+              <p className="font-body text-sm text-text-muted mb-xs">
+                ({partialCount} partially correct)
+              </p>
+            )}
+            <p className="font-body text-base text-text-muted">{message}</p>
+          </div>
+
+          <div className="flex flex-col gap-smd mb-xl">
+            {answers.map((answer, i) => {
+              const styles = {
+                correct: { border: 'border-sage', stripe: 'bg-sage', bg: 'bg-[rgba(180,212,184,0.2)]' },
+                partial: { border: 'border-bg-card', stripe: 'bg-bg-card', bg: 'bg-[rgba(255,243,225,0.4)]' },
+                incorrect: { border: 'border-rose', stripe: 'bg-[#E08C95]', bg: 'bg-[rgba(240,160,168,0.2)]' },
+              };
+              const s = styles[answer.verdict] || styles.incorrect;
+
+              return (
+                <div
+                  key={i}
+                  className={`animate-fade-in flex overflow-hidden rounded-card-sm border ${s.border}`}
+                  style={{ animationDelay: `${i * 0.08}s`, opacity: 0 }}
+                >
+                  <div className={`w-[12px] flex-shrink-0 ${s.stripe}`} />
+                  <div className={`flex-1 flex flex-col gap-sm px-md py-lg border-l border-border-default ${s.bg}`}>
+                    <p className="font-body text-xs text-text-muted">{questions[i].topic}</p>
+                    <p className="font-body font-semibold text-base text-text-title leading-snug">
+                      {questions[i].question}
+                    </p>
+                    <p className="font-body text-sm text-text-body leading-[20px]">
+                      {answer.feedback}
+                    </p>
+                    {answer.verdict !== 'correct' && (
+                      <p className="font-body text-sm text-text-muted leading-[20px]">
+                        <span className="font-semibold">Answer:</span> {answer.correctAnswer}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <Button onClick={onRestart} className="w-full">
+            Try Again
+          </Button>
+        </div>
+      );
+    }
+
+    // ─── Error Screen ──────────────────────────────────────────────
+    function ErrorScreen({ message, onRetry }) {
+      return (
+        <div className="animate-scale-in text-center py-2xl">
+          <span className="text-[48px] leading-none block mb-md">😕</span>
+          <h2 className="font-heading font-bold text-2xl text-text-title mb-smd">
+            Something went wrong
+          </h2>
+          <p className="font-body text-sm text-text-muted mb-xl max-w-[300px] mx-auto">
+            {message}
+          </p>
+          <Button onClick={onRetry}>Try Again</Button>
+        </div>
+      );
+    }
+
+    // ─── App ───────────────────────────────────────────────────────
+    function App() {
+      const [screen, setScreen] = useState('start');      // start | loading | quiz | results | error
+      const [currentQ, setCurrentQ] = useState(0);
+      const [questions, setQuestions] = useState([]);      // { topic, question, expectedAnswer }
+      const [answers, setAnswers] = useState([]);          // { userAnswer, verdict, feedback, correctAnswer }
+      const [questionState, setQuestionState] = useState('loading'); // loading | answering | submitting | feedback
+      const [answerResult, setAnswerResult] = useState(null);
+      const [errorMsg, setErrorMsg] = useState('');
+      const usedTopicsRef = useRef([]);
+
+      const generateNextQuestion = useCallback(async () => {
+        setQuestionState('loading');
+        try {
+          const data = await quizAPI({
+            action: 'generate',
+            usedTopics: usedTopicsRef.current,
+          });
+          usedTopicsRef.current = [...usedTopicsRef.current, data.topic];
+          setQuestions(prev => [...prev, data]);
+          setQuestionState('answering');
+          setScreen('quiz');
+        } catch (err) {
+          setErrorMsg(err.message);
+          setScreen('error');
+        }
+      }, []);
+
+      const handleStart = useCallback(() => {
+        setScreen('loading');
+        setCurrentQ(0);
+        setQuestions([]);
+        setAnswers([]);
+        setAnswerResult(null);
+        usedTopicsRef.current = [];
+        generateNextQuestion();
+      }, [generateNextQuestion]);
+
+      const handleSubmitAnswer = useCallback(async (userAnswer) => {
+        setQuestionState('submitting');
+        const q = questions[currentQ];
+        try {
+          const result = await quizAPI({
+            action: 'check',
+            question: q.question,
+            expectedAnswer: q.expectedAnswer,
+            userAnswer,
+          });
+          setAnswerResult(result);
+          setAnswers(prev => [...prev, { userAnswer, ...result }]);
+          setQuestionState('feedback');
+        } catch (err) {
+          setErrorMsg(err.message);
+          setScreen('error');
+        }
+      }, [questions, currentQ]);
+
+      const handleNext = useCallback(() => {
+        if (currentQ < TOTAL_QUESTIONS - 1) {
+          setCurrentQ(prev => prev + 1);
+          setAnswerResult(null);
+          setScreen('loading');
+          generateNextQuestion();
+        } else {
+          setScreen('results');
+        }
+      }, [currentQ, generateNextQuestion]);
+
+      return (
+        <div className="min-h-screen bg-bg-main flex items-start justify-center px-md py-xl">
+          <div className="w-full max-w-[420px]">
+            {screen === 'start' && (
+              <StartScreen onStart={handleStart} />
+            )}
+            {screen === 'loading' && (
+              <div className="animate-scale-in">
+                <div className="mb-lg">
+                  <ProgressBar current={currentQ} total={TOTAL_QUESTIONS} />
+                  <div className="mt-smd">
+                    <span className="font-body text-sm text-text-muted">
+                      Question {currentQ + 1} of {TOTAL_QUESTIONS}
+                    </span>
+                  </div>
+                </div>
+                <Spinner message="Generating your question..." />
+              </div>
+            )}
+            {screen === 'quiz' && questions[currentQ] && (
+              <QuestionCard
+                key={currentQ}
+                questionData={questions[currentQ]}
+                questionIndex={currentQ}
+                totalQuestions={TOTAL_QUESTIONS}
+                onSubmitAnswer={handleSubmitAnswer}
+                questionState={questionState}
+                answerResult={answerResult}
+                onNext={handleNext}
+              />
+            )}
+            {screen === 'results' && (
+              <ResultsScreen
+                questions={questions}
+                answers={answers}
+                onRestart={handleStart}
+              />
+            )}
+            {screen === 'error' && (
+              <ErrorScreen message={errorMsg} onRetry={handleStart} />
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // ─── Mount ─────────────────────────────────────────────────────
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
