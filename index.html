@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="version" content="0.3.0" />
+  <meta name="version" content="0.4.0" />
   <title>Horse Quiz — BHS Stage 1 Practice</title>
 
   <!-- Fonts -->
@@ -94,10 +94,10 @@
     }
 
     @keyframes gallop {
-      0%, 100% { transform: translateX(0) scaleX(-1); }
-      25%  { transform: translateX(4px) scaleX(-1) translateY(-3px); }
-      50%  { transform: translateX(8px) scaleX(-1); }
-      75%  { transform: translateX(4px) scaleX(-1) translateY(-3px); }
+      0%, 100% { transform: translateY(0) scaleX(-1); }
+      30%  { transform: translateY(-4px) scaleX(-1); }
+      60%  { transform: translateY(0) scaleX(-1); }
+      80%  { transform: translateY(-2px) scaleX(-1); }
     }
 
     .animate-scale-in {
@@ -177,16 +177,16 @@
       return (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(2.5px)', WebkitBackdropFilter: 'blur(2.5px)' }}>
           <div className="mx-6 rounded-card p-[3px]" style={{ maxWidth: '315px', width: '100%', background: 'linear-gradient(135deg, #B4D4B8, #F0A0A8, #FFF3E1)', boxShadow: '0 0 60px rgba(240, 160, 168, 0.4)' }}>
-            <div className="rounded-[13px] p-6 pb-8 flex flex-col items-center gap-6" style={{ height: '170px', background: 'rgba(250, 249, 246, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+            <div className="rounded-[13px] p-6 pb-8 flex flex-col items-center gap-5" style={{ height: '185px', background: 'rgba(250, 249, 246, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
               <div className="flex-1 flex items-center justify-center">
                 <p className="font-body font-normal text-lg text-center" style={{ maxWidth: '250px' }} key={factIndex}>
                   <span className="animate-fade-in block">{shuffled[factIndex]}</span>
                 </p>
               </div>
-              <div className="flex items-center gap-sm w-full" style={{ maxWidth: '250px' }}>
-                <span className="text-xl" style={{ animation: 'gallop 0.6s ease-in-out infinite' }}>🐎</span>
-                <div className="flex-1 h-2 rounded-pill border border-border-control overflow-hidden">
-                  <div className="h-full rounded-pill" style={{ background: 'linear-gradient(160deg, rgba(180, 212, 184, 0.2) 15%, #B4D4B8 82%)', animation: 'shimmer 1.5s ease-in-out infinite' }} />
+              <div className="flex flex-col items-center w-full" style={{ maxWidth: '250px' }}>
+                <span className="text-xl mb-[2px]" style={{ animation: 'gallop 0.8s ease-in-out infinite' }}>🐎</span>
+                <div className="w-full h-2 rounded-pill border border-border-control overflow-hidden">
+                  <div className="h-full rounded-pill" style={{ background: 'linear-gradient(160deg, rgba(180, 212, 184, 0.2) 15%, #B4D4B8 82%)', animation: 'shimmer 2.5s ease-in-out infinite' }} />
                 </div>
               </div>
             </div>
@@ -230,7 +230,33 @@
       );
     }
 
-    // ─── Question Input ───────────────────────────────────────────
+    // ─── Answer Option (MC) ───────────────────────────────────────
+    function AnswerOption({ text, index, selected, onClick }) {
+      const labels = ['A', 'B', 'C', 'D'];
+      const isSelected = selected === index;
+
+      return (
+        <button
+          onClick={() => onClick(index)}
+          className={`w-full flex items-center gap-sm px-md py-lg rounded-card-sm border transition-all duration-200 text-left cursor-pointer active:scale-[0.98] ${
+            isSelected
+              ? 'bg-[rgba(240,160,168,0.15)] border-action-primary'
+              : 'bg-bg-element border-border-default hover:border-border-accent'
+          }`}
+        >
+          <span className={`flex-shrink-0 w-[23px] h-[23px] rounded-full flex items-center justify-center font-body font-semibold text-sm border ${
+            isSelected
+              ? 'bg-action-primary border-action-primary text-text-title'
+              : 'border-border-default text-text-body'
+          }`}>
+            {labels[index]}
+          </span>
+          <span className="font-body font-semibold text-base text-text-title">{text}</span>
+        </button>
+      );
+    }
+
+    // ─── Question Input (Open) ────────────────────────────────────
     function QuestionInput({ onSubmit, isLast }) {
       const [value, setValue] = useState('');
       const textareaRef = useRef(null);
@@ -241,7 +267,7 @@
 
       function handleSubmit(e) {
         e.preventDefault();
-        if (value.trim()) onSubmit(value.trim());
+        if (value.trim()) onSubmit({ type: 'open', text: value.trim() });
       }
 
       return (
@@ -265,9 +291,42 @@
       );
     }
 
+    // ─── MC Question Input ────────────────────────────────────────
+    function MCInput({ options, onSubmit, isLast }) {
+      const [selected, setSelected] = useState(null);
+
+      function handleSubmit() {
+        if (selected !== null) onSubmit({ type: 'mc', selectedIndex: selected });
+      }
+
+      return (
+        <div className="flex flex-col gap-smd">
+          <div className="flex flex-col gap-smd">
+            {options.map((option, i) => (
+              <AnswerOption
+                key={i}
+                text={option}
+                index={i}
+                selected={selected}
+                onClick={setSelected}
+              />
+            ))}
+          </div>
+          <Button
+            onClick={handleSubmit}
+            disabled={selected === null}
+            className="w-full"
+          >
+            {isLast ? 'Submit & See Results' : 'Submit & Next'}
+          </Button>
+        </div>
+      );
+    }
+
     // ─── Question Card ─────────────────────────────────────────────
     function QuestionCard({ questionData, questionIndex, totalQuestions, onSubmitAnswer }) {
       const isLast = questionIndex === totalQuestions - 1;
+      const isMC = questionData.type === 'mc';
 
       return (
         <div className="animate-scale-in">
@@ -287,7 +346,11 @@
             {questionData.question}
           </h2>
 
-          <QuestionInput onSubmit={onSubmitAnswer} isLast={isLast} />
+          {isMC ? (
+            <MCInput options={questionData.options} onSubmit={onSubmitAnswer} isLast={isLast} />
+          ) : (
+            <QuestionInput onSubmit={onSubmitAnswer} isLast={isLast} />
+          )}
         </div>
       );
     }
@@ -314,7 +377,7 @@
             <div className="h-px bg-border-default my-smd" />
             <div className="flex items-center justify-between text-sm font-body text-text-body">
               <span>Type</span>
-              <span className="font-bold">AI-generated, open-ended</span>
+              <span className="font-bold">Multiple choice & open-ended</span>
             </div>
             <div className="h-px bg-border-default my-smd" />
             <div className="flex items-center justify-between text-sm font-body text-text-body">
@@ -331,15 +394,15 @@
     }
 
     // ─── Result Accordion Item ─────────────────────────────────────
-    function ResultItem({ question, answer, index }) {
+    function ResultItem({ question, result, index }) {
       const [open, setOpen] = useState(false);
 
       const styles = {
         correct: { border: 'border-sage', stripe: 'bg-sage', bg: 'bg-[rgba(180,212,184,0.2)]', label: 'Correct' },
         partial: { border: 'border-bg-card', stripe: 'bg-bg-card', bg: 'bg-[rgba(255,243,225,0.4)]', label: 'Partial' },
-        incorrect: { border: 'border-rose', stripe: 'bg-[#E08C95]', bg: 'bg-[rgba(240,160,168,0.2)]', label: 'Incorrect' },
+        incorrect: { border: 'border-rose', stripe: 'bg-[#E08C95]', bg: 'bg-[rgba(240,160,168,0.2)]', label: 'Not quite' },
       };
-      const s = styles[answer.verdict] || styles.incorrect;
+      const s = styles[result.verdict] || styles.incorrect;
 
       const verdictBadgeStyles = {
         correct: 'bg-sage text-text-title',
@@ -363,7 +426,7 @@
                 </p>
               </div>
               <div className="flex items-center gap-xs flex-shrink-0 mt-xs">
-                <span className={`font-body text-xs font-bold px-sm py-xs rounded-pill ${verdictBadgeStyles[answer.verdict]}`}>
+                <span className={`font-body text-xs font-bold px-sm py-xs rounded-pill ${verdictBadgeStyles[result.verdict]}`}>
                   {s.label}
                 </span>
                 <span className={`text-text-muted text-sm transition-transform duration-200 ${open ? 'rotate-180' : ''}`}>
@@ -376,16 +439,16 @@
               <div className="animate-fade-in mt-smd flex flex-col gap-sm">
                 <div className="pt-smd border-t border-border-default">
                   <p className="font-body text-xs text-text-muted mb-xs font-semibold">Your answer</p>
-                  <p className="font-body text-sm text-text-body leading-[20px]">{answer.userAnswer}</p>
+                  <p className="font-body text-sm text-text-body leading-[20px]">{result.userAnswer}</p>
                 </div>
                 <div>
                   <p className="font-body text-xs text-text-muted mb-xs font-semibold">Feedback</p>
-                  <p className="font-body text-sm text-text-body leading-[20px]">{answer.feedback}</p>
+                  <p className="font-body text-sm text-text-body leading-[20px]">{result.feedback}</p>
                 </div>
-                {answer.verdict !== 'correct' && (
+                {result.verdict !== 'correct' && (
                   <div>
                     <p className="font-body text-xs text-text-muted mb-xs font-semibold">Correct answer</p>
-                    <p className="font-body text-sm text-text-body leading-[20px]">{answer.correctAnswer}</p>
+                    <p className="font-body text-sm text-text-body leading-[20px]">{result.correctAnswer}</p>
                   </div>
                 )}
               </div>
@@ -396,10 +459,10 @@
     }
 
     // ─── Results Screen ────────────────────────────────────────────
-    function ResultsScreen({ questions, answers, onRestart }) {
-      const correctCount = answers.filter(a => a.verdict === 'correct').length;
-      const partialCount = answers.filter(a => a.verdict === 'partial').length;
-      const total = answers.length;
+    function ResultsScreen({ questions, results, onRestart }) {
+      const correctCount = results.filter(r => r.verdict === 'correct').length;
+      const partialCount = results.filter(r => r.verdict === 'partial').length;
+      const total = results.length;
 
       const score = correctCount + (partialCount * 0.5);
       const emoji = score >= total ? '🎉' : score >= total / 2 ? '👏' : '📚';
@@ -426,11 +489,11 @@
           </div>
 
           <div className="flex flex-col gap-smd mb-xl">
-            {answers.map((answer, i) => (
+            {results.map((result, i) => (
               <ResultItem
                 key={i}
                 question={questions[i]}
-                answer={answer}
+                result={result}
                 index={i}
               />
             ))}
@@ -464,10 +527,49 @@
       const [screen, setScreen] = useState('start');   // start | quiz | results | error
       const [currentQ, setCurrentQ] = useState(0);
       const [questions, setQuestions] = useState([]);
-      const [userAnswers, setUserAnswers] = useState([]);  // raw strings
-      const [results, setResults] = useState([]);          // { verdict, feedback, correctAnswer }
-      const [loading, setLoading] = useState(false);       // controls modal overlay
+      const [userAnswers, setUserAnswers] = useState([]);  // { type, text|selectedIndex }
+      const [results, setResults] = useState([]);
+      const [loading, setLoading] = useState(false);
       const [errorMsg, setErrorMsg] = useState('');
+
+      // Check MC answers client-side, send open-ended to API
+      const evaluateAnswers = useCallback(async (qs, answers) => {
+        const finalResults = new Array(qs.length);
+
+        // Evaluate MC locally
+        const openItems = [];
+        const openIndices = [];
+        qs.forEach((q, i) => {
+          const ans = answers[i];
+          if (q.type === 'mc') {
+            const correct = ans.selectedIndex === q.correctIndex;
+            finalResults[i] = {
+              verdict: correct ? 'correct' : 'incorrect',
+              feedback: q.explanation,
+              correctAnswer: q.options[q.correctIndex],
+              userAnswer: q.options[ans.selectedIndex],
+            };
+          } else {
+            openItems.push({
+              question: q.question,
+              expectedAnswer: q.expectedAnswer,
+              userAnswer: ans.text,
+            });
+            openIndices.push(i);
+          }
+        });
+
+        // Send open-ended to API if any
+        if (openItems.length > 0) {
+          const data = await quizAPI({ action: 'check-all', items: openItems });
+          data.results.forEach((r, j) => {
+            const i = openIndices[j];
+            finalResults[i] = { ...r, userAnswer: answers[i].text };
+          });
+        }
+
+        return finalResults;
+      }, []);
 
       const handleStart = useCallback(async () => {
         setLoading(true);
@@ -494,16 +596,11 @@
         if (currentQ < TOTAL_QUESTIONS - 1) {
           setCurrentQ(prev => prev + 1);
         } else {
-          // Last question — batch check all
+          // Last question — evaluate all
           setLoading(true);
           try {
-            const items = questions.map((q, i) => ({
-              question: q.question,
-              expectedAnswer: q.expectedAnswer,
-              userAnswer: newAnswers[i],
-            }));
-            const data = await quizAPI({ action: 'check-all', items });
-            setResults(data.results.map((r, i) => ({ ...r, userAnswer: newAnswers[i] })));
+            const finalResults = await evaluateAnswers(questions, newAnswers);
+            setResults(finalResults);
             setLoading(false);
             setScreen('results');
           } catch (err) {
@@ -512,7 +609,7 @@
             setScreen('error');
           }
         }
-      }, [userAnswers, currentQ, questions]);
+      }, [userAnswers, currentQ, questions, evaluateAnswers]);
 
       return (
         <div className="min-h-screen bg-bg-main flex items-start justify-center px-md py-xl">
@@ -532,7 +629,7 @@
             {screen === 'results' && (
               <ResultsScreen
                 questions={questions}
-                answers={results}
+                results={results}
                 onRestart={handleStart}
               />
             )}
