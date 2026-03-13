@@ -369,17 +369,9 @@
 
     // ─── Start Screen ──────────────────────────────────────────────
     function StartScreen({ onStart }) {
-      const [msgIndex, setMsgIndex] = useState(0);
-      const [shuffled] = useState(() =>
-        [...INTRO_MESSAGES].sort(() => Math.random() - 0.5)
+      const [message] = useState(() =>
+        INTRO_MESSAGES[Math.floor(Math.random() * INTRO_MESSAGES.length)]
       );
-
-      useEffect(() => {
-        const timer = setInterval(() => {
-          setMsgIndex(prev => (prev + 1) % shuffled.length);
-        }, 4000);
-        return () => clearInterval(timer);
-      }, [shuffled]);
 
       return (
         <div className="animate-scale-in text-center">
@@ -388,11 +380,9 @@
             <h1 className="font-heading font-bold text-3xl text-text-title mb-smd">
               Horse Quiz
             </h1>
-            <div style={{ minHeight: '56px' }} className="flex items-center justify-center">
-              <p className="font-body text-lg text-text-muted max-w-[300px] mx-auto leading-relaxed" key={msgIndex}>
-                <span className="animate-fade-in block">{shuffled[msgIndex]}</span>
-              </p>
-            </div>
+            <p className="font-body text-lg text-text-muted max-w-[300px] mx-auto leading-relaxed">
+              {message}
+            </p>
           </div>
 
           <div className="bg-bg-card rounded-card p-lg mb-xl">
