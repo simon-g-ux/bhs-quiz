@@ -127,6 +127,80 @@
 
     const TOTAL_QUESTIONS = 10;
 
+    // ─── Header ──────────────────────────────────────────────────
+    function Header({ onHome }) {
+      const [menuOpen, setMenuOpen] = useState(false);
+
+      return (
+        <>
+          <header className="flex items-center justify-between mb-lg">
+            <button onClick={onHome} className="font-heading font-bold text-xl text-text-title hover:text-action-primary transition-colors cursor-pointer">
+              Horse Quiz
+            </button>
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="w-[36px] h-[36px] flex flex-col items-center justify-center gap-[5px] cursor-pointer"
+              aria-label="Open menu"
+            >
+              <span className="block w-[20px] h-[2px] bg-text-title rounded-full" />
+              <span className="block w-[20px] h-[2px] bg-text-title rounded-full" />
+              <span className="block w-[20px] h-[2px] bg-text-title rounded-full" />
+            </button>
+          </header>
+
+          {menuOpen && (
+            <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setMenuOpen(false)}>
+              <div className="absolute inset-0 bg-black/40" style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }} />
+              <div
+                className="relative w-[280px] h-full bg-bg-main shadow-lg animate-fade-in flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-lg py-lg border-b border-border-default">
+                  <span className="font-heading font-bold text-lg text-text-title">Menu</span>
+                  <button
+                    onClick={() => setMenuOpen(false)}
+                    className="w-[36px] h-[36px] flex items-center justify-center cursor-pointer text-text-muted hover:text-text-title transition-colors text-2xl leading-none"
+                    aria-label="Close menu"
+                  >
+                    &times;
+                  </button>
+                </div>
+                <nav className="flex flex-col px-lg py-md">
+                  <button
+                    onClick={() => { onHome(); setMenuOpen(false); }}
+                    className="text-left font-body text-base text-text-body py-smd hover:text-action-primary transition-colors cursor-pointer"
+                  >
+                    Home
+                  </button>
+                  <div className="h-px bg-border-default" />
+                  <button
+                    className="text-left font-body text-base text-text-muted py-smd cursor-default"
+                    disabled
+                  >
+                    My Progress
+                  </button>
+                  <div className="h-px bg-border-default" />
+                  <button
+                    className="text-left font-body text-base text-text-muted py-smd cursor-default"
+                    disabled
+                  >
+                    Study Notes
+                  </button>
+                  <div className="h-px bg-border-default" />
+                  <button
+                    className="text-left font-body text-base text-text-muted py-smd cursor-default"
+                    disabled
+                  >
+                    Settings
+                  </button>
+                </nav>
+              </div>
+            </div>
+          )}
+        </>
+      );
+    }
+
     // ─── API Helper ───────────────────────────────────────────────
     async function quizAPI(body) {
       const res = await fetch('/.netlify/functions/quiz', {
@@ -455,16 +529,16 @@
               <div className="animate-fade-in mt-smd flex flex-col gap-sm">
                 <div className="pt-smd border-t border-border-default">
                   <p className="font-body text-xs text-text-muted mb-xs font-semibold">Your answer</p>
-                  <p className="font-body text-sm text-text-body leading-[20px]">{result.userAnswer}</p>
+                  <p className="font-body text-base text-text-body leading-relaxed">{result.userAnswer}</p>
                 </div>
                 <div>
                   <p className="font-body text-xs text-text-muted mb-xs font-semibold">Feedback</p>
-                  <p className="font-body text-sm text-text-body leading-[20px]">{result.feedback}</p>
+                  <p className="font-body text-base text-text-body leading-relaxed">{result.feedback}</p>
                 </div>
                 {result.verdict !== 'correct' && (
                   <div>
                     <p className="font-body text-xs text-text-muted mb-xs font-semibold">Correct answer</p>
-                    <p className="font-body text-sm text-text-body leading-[20px]">{result.correctAnswer}</p>
+                    <p className="font-body text-base text-text-body leading-relaxed">{result.correctAnswer}</p>
                   </div>
                 )}
               </div>
@@ -627,9 +701,19 @@
         }
       }, [userAnswers, currentQ, questions, evaluateAnswers]);
 
+      const handleHome = useCallback(() => {
+        setScreen('start');
+        setCurrentQ(0);
+        setQuestions([]);
+        setUserAnswers([]);
+        setResults([]);
+        setLoading(false);
+      }, []);
+
       return (
         <div className="min-h-screen bg-bg-main flex items-start justify-center px-md py-xl">
           <div className="w-full max-w-[420px]">
+            <Header onHome={handleHome} />
             {screen === 'start' && (
               <StartScreen onStart={handleStart} />
             )}
