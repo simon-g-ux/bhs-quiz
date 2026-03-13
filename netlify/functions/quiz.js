@@ -41,8 +41,8 @@ async function generateAll(apiKey, count) {
 
 Rules:
 - Generate exactly ${count} questions, each on a DIFFERENT topic
-- Topics must be drawn from: Horse Health, Feeding & Watering, Tack & Equipment, Grooming, Horse Behaviour, Stable Management, Grassland Care, Riding Theory
-- Create a MIX of question types: at least 1 multiple-choice and at least 1 open-ended. Vary the mix each time.
+- Topics must be drawn from: Horse Health, Feeding & Watering, Tack & Equipment, Grooming, Horse Behaviour, Stable Management, Grassland Care, Riding Theory. You may reuse topics if count exceeds 8, but vary the specific questions.
+- Create a MIX of question types: roughly half multiple-choice and half open-ended. Vary the mix each time.
 - Pitch at BHS Stage 1 level: foundational practical horsemanship
 
 For MULTIPLE-CHOICE questions, use type "mc":
@@ -69,7 +69,7 @@ Open shape: { "type": "open", "topic": string, "question": string, "expectedAnsw
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 1200,
+      max_tokens: 4000,
       system: systemPrompt,
       messages: [
         { role: 'user', content: `Generate ${count} BHS Stage 1 questions on different topics. Mix multiple-choice and open-ended.` }
@@ -128,7 +128,7 @@ Respond ONLY with a valid JSON object. No markdown, no code fences, no extra tex
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-5-20250929',
-      max_tokens: 800,
+      max_tokens: 2000,
       system: systemPrompt,
       messages: [
         { role: 'user', content: `Please evaluate these ${items.length} answers:\n\n${itemsList}` }

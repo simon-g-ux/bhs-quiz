@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="version" content="0.4.0" />
+  <meta name="version" content="0.5.0" />
   <title>Horse Quiz — BHS Stage 1 Practice</title>
 
   <!-- Fonts -->
@@ -125,7 +125,7 @@
   <script type="text/babel">
     const { useState, useCallback, useEffect, useRef } = React;
 
-    const TOTAL_QUESTIONS = 3;
+    const TOTAL_QUESTIONS = 10;
 
     // ─── API Helper ───────────────────────────────────────────────
     async function quizAPI(body) {
@@ -179,7 +179,7 @@
           <div className="mx-6 rounded-card p-[3px]" style={{ maxWidth: '315px', width: '100%', background: 'linear-gradient(135deg, #B4D4B8, #F0A0A8, #FFF3E1)', boxShadow: '0 0 60px rgba(240, 160, 168, 0.4)' }}>
             <div className="rounded-[13px] p-6 pb-8 flex flex-col items-center gap-5" style={{ height: '185px', background: 'rgba(250, 249, 246, 0.9)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
               <div className="flex-1 flex items-center justify-center">
-                <p className="font-body font-normal text-lg text-center" style={{ maxWidth: '250px' }} key={factIndex}>
+                <p className="font-body font-semibold text-lg text-text-title text-center" style={{ maxWidth: '250px' }} key={factIndex}>
                   <span className="animate-fade-in block">{shuffled[factIndex]}</span>
                 </p>
               </div>
@@ -240,18 +240,18 @@
           onClick={() => onClick(index)}
           className={`w-full flex items-center gap-sm px-md py-lg rounded-card-sm border transition-all duration-200 text-left cursor-pointer active:scale-[0.98] ${
             isSelected
-              ? 'bg-[rgba(240,160,168,0.15)] border-action-primary'
+              ? 'bg-[rgba(42,42,42,0.04)] border-border-control'
               : 'bg-bg-element border-border-default hover:border-border-accent'
           }`}
         >
           <span className={`flex-shrink-0 w-[23px] h-[23px] rounded-full flex items-center justify-center font-body font-semibold text-sm border ${
             isSelected
-              ? 'bg-action-primary border-action-primary text-text-title'
+              ? 'bg-action-secondary border-action-secondary text-bg-element'
               : 'border-border-default text-text-body'
           }`}>
             {labels[index]}
           </span>
-          <span className="font-body font-semibold text-base text-text-title">{text}</span>
+          <span className="font-body font-semibold text-lg text-text-title">{text}</span>
         </button>
       );
     }
@@ -355,8 +355,32 @@
       );
     }
 
+    // ─── Intro Messages ─────────────────────────────────────────────
+    const INTRO_MESSAGES = [
+      "Got your tea? Choccy in hand? Then let's do some practice for your BHS Stage 1 exam.",
+      "Let's practice! Then get some choc!",
+      "Why not get Simmy to make you some tea before you start your quiz practice?",
+      "Quiz > choccy > quiz > choccy (repeat)",
+      "At least this isn't a webinar",
+      "If you hit 2/3 you win a kiss from SIMMY",
+      "Somebody loves you very much, you know",
+      "POOOOOOP",
+    ];
+
     // ─── Start Screen ──────────────────────────────────────────────
     function StartScreen({ onStart }) {
+      const [msgIndex, setMsgIndex] = useState(0);
+      const [shuffled] = useState(() =>
+        [...INTRO_MESSAGES].sort(() => Math.random() - 0.5)
+      );
+
+      useEffect(() => {
+        const timer = setInterval(() => {
+          setMsgIndex(prev => (prev + 1) % shuffled.length);
+        }, 4000);
+        return () => clearInterval(timer);
+      }, [shuffled]);
+
       return (
         <div className="animate-scale-in text-center">
           <div className="mb-2xl">
@@ -364,15 +388,17 @@
             <h1 className="font-heading font-bold text-3xl text-text-title mb-smd">
               Horse Quiz
             </h1>
-            <p className="font-body text-lg text-text-muted max-w-[280px] mx-auto leading-relaxed">
-              Practice for your BHS Stage 1 exam
-            </p>
+            <div style={{ minHeight: '56px' }} className="flex items-center justify-center">
+              <p className="font-body text-lg text-text-muted max-w-[300px] mx-auto leading-relaxed" key={msgIndex}>
+                <span className="animate-fade-in block">{shuffled[msgIndex]}</span>
+              </p>
+            </div>
           </div>
 
           <div className="bg-bg-card rounded-card p-lg mb-xl">
             <div className="flex items-center justify-between text-sm font-body text-text-body">
               <span>Questions</span>
-              <span className="font-bold">3</span>
+              <span className="font-bold">10</span>
             </div>
             <div className="h-px bg-border-default my-smd" />
             <div className="flex items-center justify-between text-sm font-body text-text-body">
