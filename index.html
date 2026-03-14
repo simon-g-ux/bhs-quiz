@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="version" content="0.5.0" />
-  <title>Horse Quiz — BHS Stage 1 Practice</title>
+  <title>BHS practice - demo</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -135,7 +135,7 @@
         <>
           <header className="flex items-center justify-between mb-lg">
             <button onClick={onHome} className="font-heading font-bold text-xl text-text-title hover:text-action-primary transition-colors cursor-pointer">
-              Horse Quiz
+              BHS practice - demo
             </button>
             <button
               onClick={() => setMenuOpen(true)}
@@ -232,6 +232,21 @@
       "Horses can't breathe through their mouths.",
       "A group of horses will not all sleep at the same time.",
       "Horses have 16 muscles in each ear.",
+      "Horses have an almost 360-degree field of vision.",
+      "A horse's brain weighs about half of a human's.",
+      "Horses can gallop at around 44 km/h on average.",
+      "The Arabian horse has one fewer vertebra than other breeds.",
+      "Horses have a fixed pelvis so they can't do the splits.",
+      "A foal's legs are already 90% of their adult length at birth.",
+      "Horses can't vomit due to a strong one-way valve in their stomach.",
+      "The frog of a horse's hoof helps pump blood back up the leg.",
+      "Horses have been domesticated for over 5,000 years.",
+      "A horse can see two different things at once, one from each eye.",
+      "The gestation period for a horse is roughly 11 months.",
+      "Horses use facial expressions to communicate with each other.",
+      "A Thoroughbred's heart can weigh up to 10 kg.",
+      "Horses naturally have a flight response and prefer to run from danger.",
+      "Most horses are measured in hands. One hand equals 4 inches.",
     ];
 
     // ─── Loading Modal ────────────────────────────────────────────
@@ -273,7 +288,7 @@
     function Button({ children, onClick, variant = 'primary', disabled = false, className = '' }) {
       const base = 'font-heading font-bold text-lg px-xl py-smd rounded-pill transition-all duration-200 cursor-pointer select-none';
       const variants = {
-        primary: 'bg-action-primary text-text-on-primary hover:brightness-95 active:scale-[0.97]',
+        primary: 'bg-action-primary text-text-on-primary border-2 border-[#D4838C] hover:brightness-95 active:scale-[0.97]',
         secondary: 'bg-action-secondary text-text-on-secondary hover:brightness-110 active:scale-[0.97]',
       };
 
@@ -459,22 +474,22 @@
             </p>
           </div>
 
-          <div className="bg-bg-card rounded-card p-lg mb-xl text-left">
+          <div className="bg-bg-card rounded-card p-lg mb-xl text-left border border-border-default">
             <h2 className="font-heading font-bold text-xl text-text-title mb-xs">Setup</h2>
             <p className="font-body text-sm text-text-muted mb-lg">Will be configurable but just static for now</p>
 
             <div className="flex items-center justify-between py-smd">
               <span className="font-heading font-bold text-base text-text-title">Questions</span>
-              <span className="font-body text-sm text-text-body border border-[#B8CCE0] rounded-card-sm px-sm py-xs">{TOTAL_QUESTIONS}</span>
+              <span className="font-body text-sm text-text-body bg-[#C5E2E9] border border-[#B8CCE0] rounded-card-sm px-sm py-xs">{TOTAL_QUESTIONS}</span>
             </div>
             <div className="h-px bg-border-default" />
             <div className="flex items-center justify-between py-smd">
               <span className="font-heading font-bold text-base text-text-title">Type</span>
               <div className="flex gap-xs">
-                <span className="font-body text-sm text-text-body bg-[rgba(184,204,224,0.25)] border border-[#B8CCE0] rounded-card-sm px-sm py-xs flex items-center gap-xs">
+                <span className="font-body text-sm text-text-body bg-[#C5E2E9] border border-[#B8CCE0] rounded-card-sm px-sm py-xs flex items-center gap-xs">
                   Multiple choice <span className="text-text-muted text-xs">&times;</span>
                 </span>
-                <span className="font-body text-sm text-text-body bg-[rgba(184,204,224,0.25)] border border-[#B8CCE0] rounded-card-sm px-sm py-xs flex items-center gap-xs">
+                <span className="font-body text-sm text-text-body bg-[#C5E2E9] border border-[#B8CCE0] rounded-card-sm px-sm py-xs flex items-center gap-xs">
                   Open <span className="text-text-muted text-xs">&times;</span>
                 </span>
               </div>
@@ -482,7 +497,7 @@
             <div className="h-px bg-border-default" />
             <div className="flex items-center justify-between py-smd">
               <span className="font-heading font-bold text-base text-text-title">Topics</span>
-              <span className="font-body text-sm text-text-body border border-[#B8CCE0] rounded-card-sm px-sm py-xs">Random BHS Stage 1</span>
+              <span className="font-body text-sm text-text-body bg-[#C5E2E9] border border-[#B8CCE0] rounded-card-sm px-sm py-xs">Random BHS Stage 1</span>
             </div>
           </div>
 
