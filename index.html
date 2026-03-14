@@ -459,25 +459,35 @@
             </p>
           </div>
 
-          <div className="bg-bg-card rounded-card p-lg mb-xl">
-            <div className="flex items-center justify-between text-sm font-body text-text-body">
-              <span>Questions</span>
-              <span className="font-bold">10</span>
+          <div className="bg-bg-card rounded-card p-lg mb-xl text-left">
+            <h2 className="font-heading font-bold text-xl text-text-title mb-xs">Setup</h2>
+            <p className="font-body text-sm text-text-muted mb-lg">Will be configurable but just static for now</p>
+
+            <div className="flex items-center justify-between py-smd">
+              <span className="font-heading font-bold text-base text-text-title">Questions</span>
+              <span className="font-body text-sm text-text-body border border-[#B8CCE0] rounded-card-sm px-sm py-xs">{TOTAL_QUESTIONS}</span>
             </div>
-            <div className="h-px bg-border-default my-smd" />
-            <div className="flex items-center justify-between text-sm font-body text-text-body">
-              <span>Type</span>
-              <span className="font-bold">Multiple choice & open-ended</span>
+            <div className="h-px bg-border-default" />
+            <div className="flex items-center justify-between py-smd">
+              <span className="font-heading font-bold text-base text-text-title">Type</span>
+              <div className="flex gap-xs">
+                <span className="font-body text-sm text-text-body bg-[rgba(184,204,224,0.25)] border border-[#B8CCE0] rounded-card-sm px-sm py-xs flex items-center gap-xs">
+                  Multiple choice <span className="text-text-muted text-xs">&times;</span>
+                </span>
+                <span className="font-body text-sm text-text-body bg-[rgba(184,204,224,0.25)] border border-[#B8CCE0] rounded-card-sm px-sm py-xs flex items-center gap-xs">
+                  Open <span className="text-text-muted text-xs">&times;</span>
+                </span>
+              </div>
             </div>
-            <div className="h-px bg-border-default my-smd" />
-            <div className="flex items-center justify-between text-sm font-body text-text-body">
-              <span>Topics</span>
-              <span className="font-bold">Random BHS Stage 1</span>
+            <div className="h-px bg-border-default" />
+            <div className="flex items-center justify-between py-smd">
+              <span className="font-heading font-bold text-base text-text-title">Topics</span>
+              <span className="font-body text-sm text-text-body border border-[#B8CCE0] rounded-card-sm px-sm py-xs">Random BHS Stage 1</span>
             </div>
           </div>
 
           <Button onClick={onStart} className="w-full">
-            Start Quiz
+            Let's go!
           </Button>
         </div>
       );
@@ -711,7 +721,7 @@
       }, []);
 
       return (
-        <div className="min-h-screen bg-bg-main flex items-start justify-center px-md py-xl">
+        <div className="min-h-screen bg-bg-main flex items-start justify-center px-md pt-smd pb-xl">
           <div className="w-full max-w-[420px]">
             <Header onHome={handleHome} />
             {screen === 'start' && (
