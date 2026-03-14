@@ -205,7 +205,9 @@
 
     // ─── API Helper ───────────────────────────────────────────────
     const RECENT_Q_KEY = 'bhs-quiz-recent';
+    const FEEDBACK_KEY = 'bhs-quiz-feedback';
     const MAX_RECENT = 30;
+    const MAX_FEEDBACK = 10;
 
     function getRecentQuestions() {
       try { return JSON.parse(localStorage.getItem(RECENT_Q_KEY)) || []; }
@@ -217,6 +219,18 @@
       const newTexts = questions.map(q => q.question);
       const merged = [...newTexts, ...existing].slice(0, MAX_RECENT);
       localStorage.setItem(RECENT_Q_KEY, JSON.stringify(merged));
+    }
+
+    function getFeedback() {
+      try { return JSON.parse(localStorage.getItem(FEEDBACK_KEY)) || []; }
+      catch { return []; }
+    }
+
+    function saveFeedback(question, note) {
+      const existing = getFeedback();
+      const entry = { question, note };
+      const merged = [entry, ...existing].slice(0, MAX_FEEDBACK);
+      localStorage.setItem(FEEDBACK_KEY, JSON.stringify(merged));
     }
 
     async function quizAPI(body) {
@@ -567,8 +581,11 @@
     }
 
     // ─── Result Accordion Item ─────────────────────────────────────
-    function ResultItem({ question, result, index }) {
+    function ResultItem({ question, result, index, onFeedback }) {
       const [open, setOpen] = useState(false);
+      const [flagOpen, setFlagOpen] = useState(false);
+      const [flagText, setFlagText] = useState('');
+      const [flagSent, setFlagSent] = useState(false);
 
       const styles = {
         correct: { border: 'border-sage', stripe: 'bg-sage', bg: 'bg-[rgba(180,212,184,0.2)]', label: 'Correct' },
@@ -624,6 +641,47 @@
                     <p className="font-body text-base text-text-body leading-relaxed">{result.correctAnswer}</p>
                   </div>
                 )}
+                <div className="pt-sm border-t border-border-default mt-sm">
+                  {flagSent ? (
+                    <p className="font-body text-xs text-text-muted">Thanks — noted for next time!</p>
+                  ) : !flagOpen ? (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setFlagOpen(true); }}
+                      className="font-body text-xs text-text-muted hover:text-action-primary transition-colors cursor-pointer"
+                    >
+                      🚩 Flag this question
+                    </button>
+                  ) : (
+                    <div onClick={(e) => e.stopPropagation()} className="flex flex-col gap-xs">
+                      <p className="font-body text-xs text-text-muted">What was wrong?</p>
+                      <textarea
+                        value={flagText}
+                        onChange={(e) => setFlagText(e.target.value)}
+                        placeholder="e.g. ambiguous wording, wrong answer, too easy..."
+                        className="font-body text-sm text-text-body bg-bg-element border border-border-default rounded-card-sm px-sm py-xs resize-none h-[60px] focus:outline-none focus:border-action-primary"
+                      />
+                      <div className="flex gap-xs">
+                        <button
+                          onClick={() => {
+                            if (flagText.trim()) {
+                              onFeedback(question.question, flagText.trim());
+                              setFlagSent(true);
+                            }
+                          }}
+                          className="font-body text-xs font-bold text-text-on-secondary bg-action-secondary rounded-pill px-sm py-xs cursor-pointer"
+                        >
+                          Send
+                        </button>
+                        <button
+                          onClick={() => { setFlagOpen(false); setFlagText(''); }}
+                          className="font-body text-xs text-text-muted cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -668,6 +726,7 @@
                 question={questions[i]}
                 result={result}
                 index={i}
+                onFeedback={saveFeedback}
               />
             ))}
           </div>
@@ -752,7 +811,8 @@
         setResults([]);
         try {
           const recentQuestions = getRecentQuestions();
-          const data = await quizAPI({ action: 'generate-all', count: TOTAL_QUESTIONS, recentQuestions });
+          const feedback = getFeedback();
+          const data = await quizAPI({ action: 'generate-all', count: TOTAL_QUESTIONS, recentQuestions, feedback });
           setQuestions(data.questions);
           saveRecentQuestions(data.questions);
           setLoading(false);
