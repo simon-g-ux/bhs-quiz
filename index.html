@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="version" content="0.5.0" />
+  <meta name="version" content="0.6.0" />
   <title>BHS practice - demo</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐴</text></svg>" />
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -215,6 +216,20 @@
       return data;
     }
 
+    // ─── Image Bank ───────────────────────────────────────────────
+    const IMAGE_BANK = {
+      bay: { url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/MaclintockVpic2.jpg/400px-MaclintockVpic2.jpg', alt: 'A bay horse' },
+      chestnut: { url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Avenger_-_Westphalian_horse.jpg/400px-Avenger_-_Westphalian_horse.jpg', alt: 'A chestnut horse' },
+      grey: { url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Lipizzaner_stallion_%282%29.jpg/400px-Lipizzaner_stallion_%282%29.jpg', alt: 'A grey horse' },
+      piebald: { url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Irish_Tinker_horse_2.JPG/400px-Irish_Tinker_horse_2.JPG', alt: 'A piebald horse' },
+      blaze: { url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Pferdeportrait_Blesse.JPG/400px-Pferdeportrait_Blesse.JPG', alt: 'A horse with a blaze marking' },
+      star: { url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Nokota_Horses_cropped.jpg/400px-Nokota_Horses_cropped.jpg', alt: 'A horse with a star marking' },
+      saddle: { url: 'https://upload.wikimedia.org/wikipedia/commons/6/63/EnglishSaddleParts.png', alt: 'Parts of an English saddle' },
+      bridle: { url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Snafflealpha.jpg/400px-Snafflealpha.jpg', alt: 'A snaffle bridle' },
+      hoofpick: { url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/HoofPick.jpg/400px-HoofPick.jpg', alt: 'A hoof pick' },
+      dandybrush: { url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/HorseGroomingTools.jpg/400px-HorseGroomingTools.jpg', alt: 'Horse grooming tools' },
+    };
+
     // ─── Horse Facts ──────────────────────────────────────────────
     const HORSE_FACTS = [
       "Horses can sleep both lying down and standing up.",
@@ -288,7 +303,7 @@
     function Button({ children, onClick, variant = 'primary', disabled = false, className = '' }) {
       const base = 'font-heading font-bold text-lg px-xl py-smd rounded-pill transition-all duration-200 cursor-pointer select-none';
       const variants = {
-        primary: 'bg-action-primary text-text-on-primary border-2 border-[#D4838C] hover:brightness-95 active:scale-[0.97]',
+        primary: 'bg-action-primary text-text-on-primary border border-[#D4838C] hover:brightness-95 active:scale-[0.97]',
         secondary: 'bg-action-secondary text-text-on-secondary hover:brightness-110 active:scale-[0.97]',
       };
 
@@ -434,6 +449,17 @@
           <h2 className="font-heading font-bold text-2xl text-text-title mb-lg leading-snug">
             {questionData.question}
           </h2>
+
+          {questionData.imageId && IMAGE_BANK[questionData.imageId] && (
+            <div className="mb-lg rounded-card-sm overflow-hidden border border-border-default">
+              <img
+                src={IMAGE_BANK[questionData.imageId].url}
+                alt={IMAGE_BANK[questionData.imageId].alt}
+                className="w-full h-auto"
+                loading="eager"
+              />
+            </div>
+          )}
 
           {isMC ? (
             <MCInput options={questionData.options} onSubmit={onSubmitAnswer} isLast={isLast} />
