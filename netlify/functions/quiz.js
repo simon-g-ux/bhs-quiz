@@ -17,7 +17,7 @@ exports.handler = async (event) => {
     }
 
     if (action === 'generate-all') {
-      return await generateAll(CLAUDE_API_KEY, body.count || 3);
+      return await generateAll(CLAUDE_API_KEY, body.count || 3, body.recentQuestions || []);
     } else if (action === 'check-all') {
       return await checkAll(CLAUDE_API_KEY, body.items);
     } else {
@@ -36,7 +36,7 @@ exports.handler = async (event) => {
   }
 };
 
-async function generateAll(apiKey, count) {
+async function generateAll(apiKey, count, recentQuestions) {
   const systemPrompt = `You are a BHS (British Horse Society) Stage 1 exam question writer. You create clear, fair questions that test practical knowledge at Stage 1 level.
 
 TOPIC AREAS AND SUB-TOPICS — draw from across this full range:
@@ -61,8 +61,9 @@ Points of the Horse: naming body parts (poll, crest, withers, loins, dock, fetlo
 
 Safety & Handling: leading in hand (walk on left, lead rope in right hand), tying up safely (quick-release knot, tie to string not solid ring), catching in the field, turning a horse out, passing behind safely
 
-RULES:
+${recentQuestions.length > 0 ? `RECENTLY ASKED — DO NOT repeat these questions or close variations. Find DIFFERENT angles within each topic area:\n${recentQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\n` : ''}RULES:
 - Generate exactly ${count} questions spread ACROSS the sub-topics above. Do not cluster on one area.
+- AVOID repeating questions from the "RECENTLY ASKED" list above. If a topic was recently covered, ask about a DIFFERENT sub-topic or angle within that area.
 - If count exceeds 10 topic areas, reuse topics but always vary the specific sub-topic.
 - Create a MIX of question types: roughly half multiple-choice and half open-ended. Vary the mix each time.
 - Pitch at BHS Stage 1 level: foundational practical horsemanship, not advanced.

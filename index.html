@@ -204,6 +204,21 @@
     }
 
     // ─── API Helper ───────────────────────────────────────────────
+    const RECENT_Q_KEY = 'bhs-quiz-recent';
+    const MAX_RECENT = 30;
+
+    function getRecentQuestions() {
+      try { return JSON.parse(localStorage.getItem(RECENT_Q_KEY)) || []; }
+      catch { return []; }
+    }
+
+    function saveRecentQuestions(questions) {
+      const existing = getRecentQuestions();
+      const newTexts = questions.map(q => q.question);
+      const merged = [...newTexts, ...existing].slice(0, MAX_RECENT);
+      localStorage.setItem(RECENT_Q_KEY, JSON.stringify(merged));
+    }
+
     async function quizAPI(body) {
       const res = await fetch('/.netlify/functions/quiz', {
         method: 'POST',
@@ -736,8 +751,10 @@
         setUserAnswers([]);
         setResults([]);
         try {
-          const data = await quizAPI({ action: 'generate-all', count: TOTAL_QUESTIONS });
+          const recentQuestions = getRecentQuestions();
+          const data = await quizAPI({ action: 'generate-all', count: TOTAL_QUESTIONS, recentQuestions });
           setQuestions(data.questions);
+          saveRecentQuestions(data.questions);
           setLoading(false);
           setScreen('quiz');
         } catch (err) {
