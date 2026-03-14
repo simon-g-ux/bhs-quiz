@@ -135,8 +135,9 @@
       return (
         <>
           <header className="flex items-center justify-between mb-lg">
-            <button onClick={onHome} className="font-heading font-bold text-xl text-text-title hover:text-action-primary transition-colors cursor-pointer">
-              BHS practice - demo
+            <button onClick={onHome} className="font-heading font-bold text-xl text-text-title hover:text-action-primary transition-colors cursor-pointer flex items-center gap-smd">
+              BHS practice
+              <span className="text-xs font-body font-normal text-text-muted bg-border-default rounded-card-sm px-[8px] py-[2px]">demo</span>
             </button>
             <button
               onClick={() => setMenuOpen(true)}
@@ -471,6 +472,19 @@
     }
 
     // ─── Intro Messages ─────────────────────────────────────────────
+    const TITLE_MESSAGES = [
+      'Welcome WeEz',
+      'BunBunita!',
+      'Oh hey baby butters',
+      'Whats up pooper?',
+      "Shouldn't you be watching a webinar?",
+      'You look so pretty!',
+      'Little quizzy Weezikins?',
+      'WeEzzzzzz!',
+      '12 atoms and a babys bib...',
+      'Your boyf is HAWT',
+    ];
+
     const INTRO_MESSAGES = [
       "Got your tea? Choccy in hand? Then let's do some practice for your BHS Stage 1 exam.",
       "Let's practice! Then get some choc!",
@@ -484,6 +498,9 @@
 
     // ─── Start Screen ──────────────────────────────────────────────
     function StartScreen({ onStart }) {
+      const [title] = useState(() =>
+        TITLE_MESSAGES[Math.floor(Math.random() * TITLE_MESSAGES.length)]
+      );
       const [message] = useState(() =>
         INTRO_MESSAGES[Math.floor(Math.random() * INTRO_MESSAGES.length)]
       );
@@ -493,7 +510,7 @@
           <div className="mb-2xl">
             <span className="text-[64px] leading-none block mb-lg">🐴</span>
             <h1 className="font-heading font-bold text-3xl text-text-title mb-smd">
-              Horse Quiz
+              {title}
             </h1>
             <p className="font-body text-lg text-text-muted max-w-[300px] mx-auto leading-relaxed">
               {message}
