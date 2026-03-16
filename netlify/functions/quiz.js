@@ -135,22 +135,26 @@ For OPEN-ENDED questions, use type "open":
 - Questions should require a short answer (1-3 sentences)
 - Provide a concise expectedAnswer listing the KEY TERMS an examiner would want to hear
 
-OPTIONAL — IMAGE QUESTIONS:
-If a question references one of the available images below, include an "imageId" field with the image ID. Only use images from this list:
+IMAGE QUESTIONS — REQUIRED:
+At least 1 in every 3 questions MUST include an image. Include an "imageId" field with the image ID. Only use images from this list:
 
 IMAGE BANK:
 - "bay": A bay horse (brown body, black mane/tail/legs)
 - "chestnut": A chestnut horse (reddish-brown all over)
 - "grey": A grey/white horse
+- "black": A solid black horse
 - "piebald": A piebald horse (black and white patches)
 - "blaze": A horse with a blaze (wide white stripe down face)
 - "star": A horse with a star marking (white mark on forehead)
-- "saddle": A general purpose saddle showing parts
+- "saddle": A general purpose saddle showing labelled parts
 - "bridle": A snaffle bridle showing parts
 - "hoofpick": A hoof pick
-- "dandybrush": A dandy brush
+- "dandybrush": Horse grooming tools laid out
+- "horseshoe": A horseshoe
+- "ragwort": Ragwort plants growing in a field
+- "anatomy": A labelled horse anatomy diagram showing skeleton and organs
 
-For image questions, ask the student to identify something in the image (e.g. "What colour is this horse?", "Name three parts of the saddle shown", "What is this grooming tool used for?"). Use imageId to reference the image.
+For image questions, ask the student to identify, describe or explain something shown in the image (e.g. "What colour is this horse?", "Name three parts of the saddle shown", "What is this grooming tool used for?", "Looking at this diagram, where is the horse's hock?", "Why is this plant dangerous to horses?"). Use imageId to reference the image. Vary which images you use across quizzes.
 
 Respond ONLY with a valid JSON object. No markdown, no code fences, no extra text.
 Key: "questions" (array of objects).
