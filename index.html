@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="version" content="0.6.0" />
+  <meta name="version" content="0.7.0" />
   <title>BHS practice - demo</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐴</text></svg>" />
 
@@ -124,12 +124,12 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useCallback, useEffect, useRef } = React;
+    const { useState, useCallback, useEffect, useRef, useMemo } = React;
 
     const TOTAL_QUESTIONS = 5;
 
     // ─── Header ──────────────────────────────────────────────────
-    function Header({ onHome }) {
+    function Header({ onHome, onProgress }) {
       const [menuOpen, setMenuOpen] = useState(false);
 
       return (
@@ -176,8 +176,8 @@
                   </button>
                   <div className="h-px bg-border-default" />
                   <button
-                    className="text-left font-body text-base text-text-muted py-smd cursor-default"
-                    disabled
+                    onClick={() => { onProgress(); setMenuOpen(false); }}
+                    className="text-left font-body text-base text-text-body py-smd hover:text-action-primary transition-colors cursor-pointer"
                   >
                     My Progress
                   </button>
@@ -231,6 +231,42 @@
       const entry = { question, note };
       const merged = [entry, ...existing].slice(0, MAX_FEEDBACK);
       localStorage.setItem(FEEDBACK_KEY, JSON.stringify(merged));
+    }
+
+    // ─── Quiz History ─────────────────────────────────────────────
+    const HISTORY_KEY = 'bhs-quiz-history';
+    const MAX_HISTORY = 50;
+
+    function getQuizHistory() {
+      try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+      catch { return []; }
+    }
+
+    function saveQuiz(questions, results) {
+      const correctCount = results.filter(r => r.verdict === 'correct').length;
+      const partialCount = results.filter(r => r.verdict === 'partial').length;
+      const incorrectCount = results.filter(r => r.verdict === 'incorrect').length;
+      const entry = {
+        id: crypto.randomUUID(),
+        timestamp: new Date().toISOString(),
+        score: correctCount + (partialCount * 0.5),
+        total: results.length,
+        correctCount,
+        partialCount,
+        incorrectCount,
+        questions: questions.map((q, i) => ({
+          question: q.question,
+          topic: q.topic,
+          type: q.type,
+          verdict: results[i].verdict,
+          userAnswer: results[i].userAnswer,
+          correctAnswer: results[i].correctAnswer,
+          feedback: results[i].feedback,
+        })),
+      };
+      const history = getQuizHistory();
+      const updated = [entry, ...history].slice(0, MAX_HISTORY);
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
     }
 
     async function quizAPI(body) {
@@ -738,6 +774,183 @@
       );
     }
 
+    // ─── Quiz Stats Hook ──────────────────────────────────────────
+    function useQuizStats() {
+      return useMemo(() => {
+        const history = getQuizHistory();
+        const totalQuizzes = history.length;
+        if (totalQuizzes === 0) {
+          return { totalQuizzes: 0, averagePercent: 0, streak: 0, topics: [] };
+        }
+
+        // Average score
+        const totalPercent = history.reduce((sum, h) => sum + (h.score / h.total) * 100, 0);
+        const averagePercent = Math.round(totalPercent / totalQuizzes);
+
+        // Streak — consecutive days back from today
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const dayMs = 86400000;
+        let streak = 0;
+        let checkDate = new Date(today);
+        const quizDates = new Set(history.map(h => {
+          const d = new Date(h.timestamp);
+          d.setHours(0, 0, 0, 0);
+          return d.getTime();
+        }));
+        while (quizDates.has(checkDate.getTime())) {
+          streak++;
+          checkDate = new Date(checkDate.getTime() - dayMs);
+        }
+
+        // Topic breakdown
+        const topicMap = {};
+        history.forEach(h => {
+          h.questions.forEach(q => {
+            if (!topicMap[q.topic]) topicMap[q.topic] = { correct: 0, partial: 0, total: 0 };
+            topicMap[q.topic].total++;
+            if (q.verdict === 'correct') topicMap[q.topic].correct++;
+            if (q.verdict === 'partial') topicMap[q.topic].partial++;
+          });
+        });
+        const topics = Object.entries(topicMap)
+          .map(([name, d]) => ({
+            name,
+            correct: d.correct,
+            partial: d.partial,
+            total: d.total,
+            percent: Math.round(((d.correct + d.partial * 0.5) / d.total) * 100),
+          }))
+          .sort((a, b) => b.total - a.total);
+
+        return { totalQuizzes, averagePercent, streak, topics };
+      }, []);
+    }
+
+    // ─── Progress Screen ─────────────────────────────────────────
+    function ProgressScreen({ onHome }) {
+      const stats = useQuizStats();
+      const history = getQuizHistory();
+      const [expandedId, setExpandedId] = useState(null);
+
+      if (stats.totalQuizzes === 0) {
+        return (
+          <div className="animate-scale-in text-center py-2xl">
+            <span className="text-[48px] leading-none block mb-md">📊</span>
+            <h2 className="font-heading font-bold text-2xl text-text-title mb-smd">No quizzes yet</h2>
+            <p className="font-body text-base text-text-muted mb-xl max-w-[280px] mx-auto">
+              Complete a quiz and your progress will show up here.
+            </p>
+            <Button onClick={onHome}>Start a Quiz</Button>
+          </div>
+        );
+      }
+
+      return (
+        <div className="animate-scale-in">
+          <h1 className="font-heading font-bold text-2xl text-text-title mb-lg">My Progress</h1>
+
+          {/* Stats cards */}
+          <div className="grid grid-cols-3 gap-smd mb-xl">
+            <div className="bg-bg-card rounded-card p-md text-center border border-border-default">
+              <p className="font-heading font-bold text-2xl text-text-title">{stats.totalQuizzes}</p>
+              <p className="font-body text-xs text-text-muted mt-xs">Quizzes</p>
+            </div>
+            <div className="bg-bg-card rounded-card p-md text-center border border-border-default">
+              <p className="font-heading font-bold text-2xl text-text-title">{stats.averagePercent}%</p>
+              <p className="font-body text-xs text-text-muted mt-xs">Average</p>
+            </div>
+            <div className="bg-bg-card rounded-card p-md text-center border border-border-default">
+              <p className="font-heading font-bold text-2xl text-text-title">{stats.streak}</p>
+              <p className="font-body text-xs text-text-muted mt-xs">Day streak</p>
+            </div>
+          </div>
+
+          {/* Topic breakdown */}
+          {stats.topics.length > 0 && (
+            <div className="mb-xl">
+              <h2 className="font-heading font-bold text-lg text-text-title mb-smd">Topics</h2>
+              <div className="flex flex-col gap-smd">
+                {stats.topics.map(t => (
+                  <div key={t.name}>
+                    <div className="flex items-center justify-between mb-xs">
+                      <span className="font-body text-sm text-text-body">{t.name}</span>
+                      <span className="font-body text-xs text-text-muted">{t.percent}% ({t.correct + Math.round(t.partial * 0.5)}/{t.total})</span>
+                    </div>
+                    <div className="w-full h-[8px] rounded-pill bg-border-default overflow-hidden">
+                      <div
+                        className={`h-full rounded-pill transition-all duration-500 ${
+                          t.percent >= 70 ? 'bg-sage' : t.percent >= 40 ? 'bg-bg-card' : 'bg-rose'
+                        }`}
+                        style={{ width: `${t.percent}%`, minWidth: t.percent > 0 ? '4px' : '0' }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent quizzes */}
+          <div className="mb-xl">
+            <h2 className="font-heading font-bold text-lg text-text-title mb-smd">Recent Quizzes</h2>
+            <div className="flex flex-col gap-smd">
+              {history.map(entry => {
+                const isOpen = expandedId === entry.id;
+                const pct = Math.round((entry.score / entry.total) * 100);
+                const date = new Date(entry.timestamp);
+                const dateStr = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+                const timeStr = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+                return (
+                  <div
+                    key={entry.id}
+                    className="bg-bg-element rounded-card-sm border border-border-default overflow-hidden"
+                  >
+                    <button
+                      onClick={() => setExpandedId(isOpen ? null : entry.id)}
+                      className="w-full flex items-center justify-between px-md py-smd cursor-pointer text-left"
+                    >
+                      <div className="flex items-center gap-smd">
+                        <span className="font-heading font-bold text-lg text-text-title">{pct}%</span>
+                        <span className="font-body text-xs text-text-muted">{entry.correctCount}/{entry.total} correct</span>
+                      </div>
+                      <div className="flex items-center gap-sm">
+                        <span className="font-body text-xs text-text-muted">{dateStr}, {timeStr}</span>
+                        <span className={`text-text-muted text-sm transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>&#9662;</span>
+                      </div>
+                    </button>
+                    {isOpen && (
+                      <div className="px-md pb-md animate-fade-in">
+                        <div className="border-t border-border-default pt-smd flex flex-col gap-xs">
+                          {entry.questions.map((q, qi) => {
+                            const dotColor = q.verdict === 'correct' ? 'bg-sage' : q.verdict === 'partial' ? 'bg-bg-card border border-border-default' : 'bg-rose';
+                            return (
+                              <div key={qi} className="flex items-start gap-sm">
+                                <span className={`flex-shrink-0 w-[10px] h-[10px] rounded-full mt-[5px] ${dotColor}`} />
+                                <div className="min-w-0">
+                                  <p className="font-body text-sm text-text-body leading-snug">{q.question}</p>
+                                  <p className="font-body text-xs text-text-muted">{q.topic}</p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <Button onClick={onHome} variant="secondary" className="w-full">
+            Back to Home
+          </Button>
+        </div>
+      );
+    }
+
     // ─── Error Screen ──────────────────────────────────────────────
     function ErrorScreen({ message, onRetry }) {
       return (
@@ -756,7 +969,7 @@
 
     // ─── App ───────────────────────────────────────────────────────
     function App() {
-      const [screen, setScreen] = useState('start');   // start | quiz | results | error
+      const [screen, setScreen] = useState('start');   // start | quiz | results | progress | error
       const [currentQ, setCurrentQ] = useState(0);
       const [questions, setQuestions] = useState([]);
       const [userAnswers, setUserAnswers] = useState([]);  // { type, text|selectedIndex }
@@ -836,6 +1049,7 @@
           try {
             const finalResults = await evaluateAnswers(questions, newAnswers);
             setResults(finalResults);
+            saveQuiz(questions, finalResults);
             setLoading(false);
             setScreen('results');
           } catch (err) {
@@ -855,10 +1069,14 @@
         setLoading(false);
       }, []);
 
+      const handleProgress = useCallback(() => {
+        setScreen('progress');
+      }, []);
+
       return (
         <div className="min-h-screen bg-bg-main flex items-start justify-center px-md pt-smd pb-xl">
           <div className="w-full max-w-[420px]">
-            <Header onHome={handleHome} />
+            <Header onHome={handleHome} onProgress={handleProgress} />
             {screen === 'start' && (
               <StartScreen onStart={handleStart} />
             )}
@@ -877,6 +1095,9 @@
                 results={results}
                 onRestart={handleStart}
               />
+            )}
+            {screen === 'progress' && (
+              <ProgressScreen onHome={handleHome} />
             )}
             {screen === 'error' && (
               <ErrorScreen message={errorMsg} onRetry={handleStart} />
