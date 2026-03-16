@@ -566,13 +566,16 @@
     function SegmentedPicker({ options, value, onChange }) {
       return (
         <div className="flex rounded-card-sm border border-border-default p-px">
-          {options.map(opt => {
+          {options.map((opt, i) => {
             const active = opt.value === value;
+            const isFirst = i === 0;
+            const isLast = i === options.length - 1;
+            const radius = isFirst ? 'rounded-l-[7px]' : isLast ? 'rounded-r-[7px]' : '';
             return (
               <button
                 key={opt.value}
                 onClick={() => onChange(opt.value)}
-                className={`flex-1 font-body font-semibold text-sm text-center px-smd py-sm rounded-[7px] transition-all duration-150 cursor-pointer select-none leading-[15px] ${
+                className={`flex-1 font-body font-semibold text-sm text-center px-smd py-sm ${radius} transition-all duration-150 cursor-pointer select-none leading-[15px] ${
                   active
                     ? 'bg-[#C5E2E9] text-text-body'
                     : 'bg-bg-element text-text-title'
