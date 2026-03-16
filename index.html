@@ -565,14 +565,14 @@
     // ─── Segmented Picker ─────────────────────────────────────────
     function SegmentedPicker({ options, value, onChange }) {
       return (
-        <div className="flex rounded-card-sm border border-border-default overflow-hidden p-px">
+        <div className="flex rounded-card-sm border border-border-default p-px">
           {options.map(opt => {
             const active = opt.value === value;
             return (
               <button
                 key={opt.value}
                 onClick={() => onChange(opt.value)}
-                className={`flex-1 font-body font-semibold text-sm text-center px-smd py-sm transition-all duration-150 cursor-pointer select-none leading-[15px] ${
+                className={`flex-1 font-body font-semibold text-sm text-center px-smd py-sm rounded-[7px] transition-all duration-150 cursor-pointer select-none leading-[15px] ${
                   active
                     ? 'bg-[#C5E2E9] text-text-body'
                     : 'bg-bg-element text-text-title'
@@ -626,7 +626,7 @@
               <div className="flex items-center justify-between">
                 <span className="font-body font-semibold text-base text-text-title">Type</span>
                 <SegmentedPicker
-                  options={[{ label: 'Multi-choice', value: 'mc' }, { label: 'Open', value: 'open' }, { label: 'Both', value: 'both' }]}
+                  options={[{ label: 'Multi', value: 'mc' }, { label: 'Open', value: 'open' }, { label: 'Both', value: 'both' }]}
                   value={questionType}
                   onChange={setQuestionType}
                 />
