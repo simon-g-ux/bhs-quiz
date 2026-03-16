@@ -565,17 +565,17 @@
     // ─── Segmented Picker ─────────────────────────────────────────
     function SegmentedPicker({ options, value, onChange }) {
       return (
-        <div className="flex rounded-card-sm border border-[#B8CCE0] overflow-hidden" style={{ background: '#C5E2E9' }}>
+        <div className="flex rounded-card-sm border border-border-default overflow-hidden p-px">
           {options.map(opt => {
             const active = opt.value === value;
             return (
               <button
                 key={opt.value}
                 onClick={() => onChange(opt.value)}
-                className={`flex-1 font-heading font-bold text-sm px-smd py-xs transition-all duration-150 cursor-pointer select-none ${
+                className={`flex-1 font-body font-semibold text-sm text-center px-smd py-sm transition-all duration-150 cursor-pointer select-none leading-[15px] ${
                   active
-                    ? 'bg-white text-text-title'
-                    : 'text-text-body'
+                    ? 'bg-[#C5E2E9] text-text-body'
+                    : 'bg-bg-element text-text-title'
                 }`}
               >
                 {opt.label}
@@ -607,34 +607,39 @@
             </p>
           </div>
 
-          <div className="bg-bg-card rounded-card p-lg mb-xl text-left border border-border-default">
-            <h2 className="font-heading font-bold text-xl text-text-title mb-lg">Setup</h2>
+          <div className="bg-bg-card rounded-card px-lg py-2xl mb-xl text-left border border-border-default flex flex-col gap-xl">
+            <div className="flex flex-col gap-smd">
+              <h2 className="font-heading font-bold text-2xl text-text-body">Setup</h2>
+              <p className="font-body text-sm text-text-on-primary leading-[20px]">Will be configurable but just static for now</p>
+            </div>
 
-            <div className="flex items-center justify-between py-smd">
-              <span className="font-heading font-bold text-base text-text-title">Questions</span>
-              <SegmentedPicker
-                options={[{ label: '3', value: 3 }, { label: '5', value: 5 }, { label: '10', value: 10 }]}
-                value={questionCount}
-                onChange={setQuestionCount}
-              />
-            </div>
-            <div className="h-px bg-border-default" />
-            <div className="flex items-center justify-between py-smd">
-              <span className="font-heading font-bold text-base text-text-title">Type</span>
-              <SegmentedPicker
-                options={[{ label: 'Multi-choice', value: 'mc' }, { label: 'Open', value: 'open' }, { label: 'Both', value: 'both' }]}
-                value={questionType}
-                onChange={setQuestionType}
-              />
-            </div>
-            <div className="h-px bg-border-default" />
-            <div className="flex items-center justify-between py-smd">
-              <span className="font-heading font-bold text-base text-text-title">Stage</span>
-              <SegmentedPicker
-                options={[{ label: 'Stage 1', value: 'stage1' }, { label: 'Stage 2', value: 'stage2' }, { label: 'Both', value: 'both' }]}
-                value={stage}
-                onChange={setStage}
-              />
+            <div className="flex flex-col gap-smd">
+              <div className="flex items-center justify-between">
+                <span className="font-body font-semibold text-base text-text-title">Questions</span>
+                <SegmentedPicker
+                  options={[{ label: '03', value: 3 }, { label: '05', value: 5 }, { label: '10', value: 10 }]}
+                  value={questionCount}
+                  onChange={setQuestionCount}
+                />
+              </div>
+              <div className="h-px bg-border-default" />
+              <div className="flex items-center justify-between">
+                <span className="font-body font-semibold text-base text-text-title">Type</span>
+                <SegmentedPicker
+                  options={[{ label: 'Multi-choice', value: 'mc' }, { label: 'Open', value: 'open' }, { label: 'Both', value: 'both' }]}
+                  value={questionType}
+                  onChange={setQuestionType}
+                />
+              </div>
+              <div className="h-px bg-border-default" />
+              <div className="flex items-center justify-between">
+                <span className="font-body font-semibold text-base text-text-title">Topics</span>
+                <SegmentedPicker
+                  options={[{ label: 'Stage 1', value: 'stage1' }, { label: 'Stage 2', value: 'stage2' }, { label: 'Both', value: 'both' }]}
+                  value={stage}
+                  onChange={setStage}
+                />
+              </div>
             </div>
           </div>
 
