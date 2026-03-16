@@ -611,10 +611,7 @@
           </div>
 
           <div className="bg-bg-card rounded-card px-lg py-2xl mb-xl text-left border border-border-default flex flex-col gap-xl">
-            <div className="flex flex-col gap-smd">
-              <h2 className="font-heading font-bold text-2xl text-text-body">Setup</h2>
-              <p className="font-body text-sm text-text-on-primary leading-[20px]">Will be configurable but just static for now</p>
-            </div>
+            <h2 className="font-heading font-bold text-2xl text-text-body">Setup your quiz</h2>
 
             <div className="flex flex-col gap-smd">
               <div className="flex items-center justify-between">
@@ -629,7 +626,7 @@
               <div className="flex items-center justify-between">
                 <span className="font-body font-semibold text-base text-text-title">Type</span>
                 <SegmentedPicker
-                  options={[{ label: 'Multi', value: 'mc' }, { label: 'Open', value: 'open' }, { label: 'All', value: 'both' }]}
+                  options={[{ label: 'Multi-choice', value: 'mc' }, { label: 'Open', value: 'open' }, { label: 'Both', value: 'both' }]}
                   value={questionType}
                   onChange={setQuestionType}
                 />
@@ -638,7 +635,7 @@
               <div className="flex items-center justify-between">
                 <span className="font-body font-semibold text-base text-text-title">Topics</span>
                 <SegmentedPicker
-                  options={[{ label: 'S1', value: 'stage1' }, { label: 'S2', value: 'stage2' }, { label: 'All', value: 'both' }]}
+                  options={[{ label: 'Stage 1', value: 'stage1' }, { label: 'Stage 2', value: 'stage2' }, { label: 'Both', value: 'both' }]}
                   value={stage}
                   onChange={setStage}
                 />
