@@ -565,7 +565,7 @@
     // ─── Segmented Picker ─────────────────────────────────────────
     function SegmentedPicker({ options, value, onChange }) {
       return (
-        <div className="flex rounded-pill border border-border-control overflow-hidden">
+        <div className="flex rounded-card-sm border border-[#B8CCE0] overflow-hidden" style={{ background: '#C5E2E9' }}>
           {options.map(opt => {
             const active = opt.value === value;
             return (
@@ -574,8 +574,8 @@
                 onClick={() => onChange(opt.value)}
                 className={`flex-1 font-heading font-bold text-sm px-smd py-xs transition-all duration-150 cursor-pointer select-none ${
                   active
-                    ? 'bg-action-secondary text-text-on-secondary'
-                    : 'bg-bg-element text-text-body hover:bg-border-default'
+                    ? 'bg-white text-text-title'
+                    : 'text-text-body'
                 }`}
               >
                 {opt.label}
@@ -587,7 +587,7 @@
     }
 
     // ─── Start Screen ──────────────────────────────────────────────
-    function StartScreen({ onStart, questionCount, setQuestionCount, stage, setStage }) {
+    function StartScreen({ onStart, questionCount, setQuestionCount, questionType, setQuestionType, stage, setStage }) {
       const [title] = useState(() =>
         TITLE_MESSAGES[Math.floor(Math.random() * TITLE_MESSAGES.length)]
       );
@@ -621,14 +621,11 @@
             <div className="h-px bg-border-default" />
             <div className="flex items-center justify-between py-smd">
               <span className="font-heading font-bold text-base text-text-title">Type</span>
-              <div className="flex gap-xs">
-                <span className="font-body text-sm text-text-body bg-[#C5E2E9] border border-[#B8CCE0] rounded-card-sm px-sm py-xs flex items-center gap-xs">
-                  Multiple choice <span className="text-text-muted text-xs">&times;</span>
-                </span>
-                <span className="font-body text-sm text-text-body bg-[#C5E2E9] border border-[#B8CCE0] rounded-card-sm px-sm py-xs flex items-center gap-xs">
-                  Open <span className="text-text-muted text-xs">&times;</span>
-                </span>
-              </div>
+              <SegmentedPicker
+                options={[{ label: 'Multi-choice', value: 'mc' }, { label: 'Open', value: 'open' }, { label: 'Both', value: 'both' }]}
+                value={questionType}
+                onChange={setQuestionType}
+              />
             </div>
             <div className="h-px bg-border-default" />
             <div className="flex items-center justify-between py-smd">
@@ -1014,6 +1011,7 @@
       const [loading, setLoading] = useState(false);
       const [errorMsg, setErrorMsg] = useState('');
       const [questionCount, setQuestionCount] = useState(5);
+      const [questionType, setQuestionType] = useState('both');
       const [stage, setStage] = useState('stage1');
 
       // Check MC answers client-side, send open-ended to API
@@ -1064,7 +1062,7 @@
         try {
           const recentQuestions = getRecentQuestions();
           const feedback = getFeedback();
-          const data = await quizAPI({ action: 'generate-all', count: questionCount, stage, recentQuestions, feedback });
+          const data = await quizAPI({ action: 'generate-all', count: questionCount, stage, questionType, recentQuestions, feedback });
           setQuestions(data.questions);
           saveRecentQuestions(data.questions);
           setLoading(false);
@@ -1074,7 +1072,7 @@
           setErrorMsg(err.message);
           setScreen('error');
         }
-      }, [questionCount, stage]);
+      }, [questionCount, questionType, stage]);
 
       const handleSubmitAnswer = useCallback(async (answer) => {
         const newAnswers = [...userAnswers, answer];
@@ -1121,6 +1119,8 @@
                 onStart={handleStart}
                 questionCount={questionCount}
                 setQuestionCount={setQuestionCount}
+                questionType={questionType}
+                setQuestionType={setQuestionType}
                 stage={stage}
                 setStage={setStage}
               />

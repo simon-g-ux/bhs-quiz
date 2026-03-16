@@ -17,7 +17,7 @@ exports.handler = async (event) => {
     }
 
     if (action === 'generate-all') {
-      return await generateAll(CLAUDE_API_KEY, body.count || 3, body.recentQuestions || [], body.feedback || [], body.stage || 'stage1');
+      return await generateAll(CLAUDE_API_KEY, body.count || 3, body.recentQuestions || [], body.feedback || [], body.stage || 'stage1', body.questionType || 'both');
     } else if (action === 'check-all') {
       return await checkAll(CLAUDE_API_KEY, body.items, body.stage || 'stage1');
     } else {
@@ -98,11 +98,18 @@ function getTopicBlock(stage) {
   return STAGE_1_TOPICS;
 }
 
-async function generateAll(apiKey, count, recentQuestions, feedback, stage) {
+function getTypeInstruction(questionType) {
+  if (questionType === 'mc') return '- ALL questions must be multiple-choice (type "mc"). Do not include any open-ended questions.';
+  if (questionType === 'open') return '- ALL questions must be open-ended (type "open"). Do not include any multiple-choice questions.';
+  return '- Create a MIX of question types: roughly half multiple-choice and half open-ended. Vary the mix each time.';
+}
+
+async function generateAll(apiKey, count, recentQuestions, feedback, stage, questionType) {
   const stageLabel = getStageLabel(stage);
   const stagePitch = getStagePitch(stage);
   const topicBlock = getTopicBlock(stage);
-  const mixInstruction = stage === 'both' ? '\n- Mix questions across BOTH Stage 1 and Stage 2 topics. Aim for a roughly even split.' : '';
+  const typeInstruction = getTypeInstruction(questionType);
+  const stageMixInstruction = stage === 'both' ? '\n- Mix questions across BOTH Stage 1 and Stage 2 topics. Aim for a roughly even split.' : '';
 
   const systemPrompt = `You are a ${stageLabel} exam question writer. You create clear, fair questions that test practical knowledge at ${stagePitch} level.
 
@@ -111,10 +118,10 @@ TOPIC AREAS AND SUB-TOPICS — draw from across this full range:
 ${topicBlock}
 
 ${recentQuestions.length > 0 ? `RECENTLY ASKED — DO NOT repeat these questions or close variations. Find DIFFERENT angles within each topic area:\n${recentQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\n` : ''}${feedback.length > 0 ? `QUIZ-TAKER FEEDBACK — they flagged these past questions. Use this to improve future questions:\n${feedback.map((f, i) => `${i + 1}. Question: "${f.question}" — Feedback: "${f.note}"`).join('\n')}\n\n` : ''}RULES:
-- Generate exactly ${count} questions spread ACROSS the sub-topics above. Do not cluster on one area.${mixInstruction}
+- Generate exactly ${count} questions spread ACROSS the sub-topics above. Do not cluster on one area.${stageMixInstruction}
 - AVOID repeating questions from the "RECENTLY ASKED" list above. If a topic was recently covered, ask about a DIFFERENT sub-topic or angle within that area.
 - If count exceeds 10 topic areas, reuse topics but always vary the specific sub-topic.
-- Create a MIX of question types: roughly half multiple-choice and half open-ended. Vary the mix each time.
+${typeInstruction}
 - Pitch at ${stagePitch} level, not advanced.
 - Include some scenario-based questions, e.g. "You arrive at the yard and notice a horse is sweating, pawing the ground, and looking at its flanks. What might be wrong and what should you do?"
 
@@ -163,7 +170,7 @@ Open shape: { "type": "open", "topic": string, "question": string, "expectedAnsw
       max_tokens: 4000,
       system: systemPrompt,
       messages: [
-        { role: 'user', content: `Generate ${count} ${stageLabel} questions on different topics. Mix multiple-choice and open-ended.` }
+        { role: 'user', content: `Generate ${count} ${stageLabel} questions on different topics.${questionType === 'mc' ? ' All multiple-choice.' : questionType === 'open' ? ' All open-ended.' : ' Mix multiple-choice and open-ended.'}` }
       ]
     })
   });
