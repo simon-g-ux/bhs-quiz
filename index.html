@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="version" content="0.7.0" />
+  <meta name="version" content="0.8.0" />
   <title>BHS practice - demo</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐴</text></svg>" />
 
@@ -126,7 +126,7 @@
   <script type="text/babel">
     const { useState, useCallback, useEffect, useRef, useMemo } = React;
 
-    const TOTAL_QUESTIONS = 5;
+    const STAGE_LABELS = { stage1: 'Stage 1', stage2: 'Stage 2', both: 'Both' };
 
     // ─── Header ──────────────────────────────────────────────────
     function Header({ onHome, onProgress }) {
@@ -242,13 +242,14 @@
       catch { return []; }
     }
 
-    function saveQuiz(questions, results) {
+    function saveQuiz(questions, results, stage) {
       const correctCount = results.filter(r => r.verdict === 'correct').length;
       const partialCount = results.filter(r => r.verdict === 'partial').length;
       const incorrectCount = results.filter(r => r.verdict === 'incorrect').length;
       const entry = {
         id: crypto.randomUUID(),
         timestamp: new Date().toISOString(),
+        stage: stage || 'stage1',
         score: correctCount + (partialCount * 0.5),
         total: results.length,
         correctCount,
@@ -561,8 +562,32 @@
       "POOOOOOP",
     ];
 
+    // ─── Segmented Picker ─────────────────────────────────────────
+    function SegmentedPicker({ options, value, onChange }) {
+      return (
+        <div className="flex rounded-pill border border-border-control overflow-hidden">
+          {options.map(opt => {
+            const active = opt.value === value;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => onChange(opt.value)}
+                className={`flex-1 font-heading font-bold text-sm px-smd py-xs transition-all duration-150 cursor-pointer select-none ${
+                  active
+                    ? 'bg-action-secondary text-text-on-secondary'
+                    : 'bg-bg-element text-text-body hover:bg-border-default'
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      );
+    }
+
     // ─── Start Screen ──────────────────────────────────────────────
-    function StartScreen({ onStart }) {
+    function StartScreen({ onStart, questionCount, setQuestionCount, stage, setStage }) {
       const [title] = useState(() =>
         TITLE_MESSAGES[Math.floor(Math.random() * TITLE_MESSAGES.length)]
       );
@@ -583,12 +608,15 @@
           </div>
 
           <div className="bg-bg-card rounded-card p-lg mb-xl text-left border border-border-default">
-            <h2 className="font-heading font-bold text-xl text-text-title mb-xs">Setup</h2>
-            <p className="font-body text-sm text-text-muted mb-lg">Will be configurable but just static for now</p>
+            <h2 className="font-heading font-bold text-xl text-text-title mb-lg">Setup</h2>
 
             <div className="flex items-center justify-between py-smd">
               <span className="font-heading font-bold text-base text-text-title">Questions</span>
-              <span className="font-body text-sm text-text-body bg-[#C5E2E9] border border-[#B8CCE0] rounded-card-sm px-sm py-xs">{TOTAL_QUESTIONS}</span>
+              <SegmentedPicker
+                options={[{ label: '3', value: 3 }, { label: '5', value: 5 }, { label: '10', value: 10 }]}
+                value={questionCount}
+                onChange={setQuestionCount}
+              />
             </div>
             <div className="h-px bg-border-default" />
             <div className="flex items-center justify-between py-smd">
@@ -604,8 +632,12 @@
             </div>
             <div className="h-px bg-border-default" />
             <div className="flex items-center justify-between py-smd">
-              <span className="font-heading font-bold text-base text-text-title">Topics</span>
-              <span className="font-body text-sm text-text-body bg-[#C5E2E9] border border-[#B8CCE0] rounded-card-sm px-sm py-xs">Random BHS Stage 1</span>
+              <span className="font-heading font-bold text-base text-text-title">Stage</span>
+              <SegmentedPicker
+                options={[{ label: 'Stage 1', value: 'stage1' }, { label: 'Stage 2', value: 'stage2' }, { label: 'Both', value: 'both' }]}
+                value={stage}
+                onChange={setStage}
+              />
             </div>
           </div>
 
@@ -914,6 +946,11 @@
                       <div className="flex items-center gap-smd">
                         <span className="font-heading font-bold text-lg text-text-title">{pct}%</span>
                         <span className="font-body text-xs text-text-muted">{entry.correctCount}/{entry.total} correct</span>
+                        {entry.stage && (
+                          <span className="font-body text-xs text-text-muted bg-border-default rounded-pill px-sm py-xs">
+                            {STAGE_LABELS[entry.stage] || entry.stage}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-sm">
                         <span className="font-body text-xs text-text-muted">{dateStr}, {timeStr}</span>
@@ -976,9 +1013,11 @@
       const [results, setResults] = useState([]);
       const [loading, setLoading] = useState(false);
       const [errorMsg, setErrorMsg] = useState('');
+      const [questionCount, setQuestionCount] = useState(5);
+      const [stage, setStage] = useState('stage1');
 
       // Check MC answers client-side, send open-ended to API
-      const evaluateAnswers = useCallback(async (qs, answers) => {
+      const evaluateAnswers = useCallback(async (qs, answers, quizStage) => {
         const finalResults = new Array(qs.length);
 
         // Evaluate MC locally
@@ -1006,7 +1045,7 @@
 
         // Send open-ended to API if any
         if (openItems.length > 0) {
-          const data = await quizAPI({ action: 'check-all', items: openItems });
+          const data = await quizAPI({ action: 'check-all', items: openItems, stage: quizStage });
           data.results.forEach((r, j) => {
             const i = openIndices[j];
             finalResults[i] = { ...r, userAnswer: answers[i].text };
@@ -1025,7 +1064,7 @@
         try {
           const recentQuestions = getRecentQuestions();
           const feedback = getFeedback();
-          const data = await quizAPI({ action: 'generate-all', count: TOTAL_QUESTIONS, recentQuestions, feedback });
+          const data = await quizAPI({ action: 'generate-all', count: questionCount, stage, recentQuestions, feedback });
           setQuestions(data.questions);
           saveRecentQuestions(data.questions);
           setLoading(false);
@@ -1035,21 +1074,21 @@
           setErrorMsg(err.message);
           setScreen('error');
         }
-      }, []);
+      }, [questionCount, stage]);
 
       const handleSubmitAnswer = useCallback(async (answer) => {
         const newAnswers = [...userAnswers, answer];
         setUserAnswers(newAnswers);
 
-        if (currentQ < TOTAL_QUESTIONS - 1) {
+        if (currentQ < questionCount - 1) {
           setCurrentQ(prev => prev + 1);
         } else {
           // Last question — evaluate all
           setLoading(true);
           try {
-            const finalResults = await evaluateAnswers(questions, newAnswers);
+            const finalResults = await evaluateAnswers(questions, newAnswers, stage);
             setResults(finalResults);
-            saveQuiz(questions, finalResults);
+            saveQuiz(questions, finalResults, stage);
             setLoading(false);
             setScreen('results');
           } catch (err) {
@@ -1058,7 +1097,7 @@
             setScreen('error');
           }
         }
-      }, [userAnswers, currentQ, questions, evaluateAnswers]);
+      }, [userAnswers, currentQ, questions, evaluateAnswers, questionCount, stage]);
 
       const handleHome = useCallback(() => {
         setScreen('start');
@@ -1078,14 +1117,20 @@
           <div className="w-full max-w-[420px]">
             <Header onHome={handleHome} onProgress={handleProgress} />
             {screen === 'start' && (
-              <StartScreen onStart={handleStart} />
+              <StartScreen
+                onStart={handleStart}
+                questionCount={questionCount}
+                setQuestionCount={setQuestionCount}
+                stage={stage}
+                setStage={setStage}
+              />
             )}
             {screen === 'quiz' && questions[currentQ] && (
               <QuestionCard
                 key={currentQ}
                 questionData={questions[currentQ]}
                 questionIndex={currentQ}
-                totalQuestions={TOTAL_QUESTIONS}
+                totalQuestions={questionCount}
                 onSubmitAnswer={handleSubmitAnswer}
               />
             )}

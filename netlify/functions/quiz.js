@@ -17,9 +17,9 @@ exports.handler = async (event) => {
     }
 
     if (action === 'generate-all') {
-      return await generateAll(CLAUDE_API_KEY, body.count || 3, body.recentQuestions || [], body.feedback || []);
+      return await generateAll(CLAUDE_API_KEY, body.count || 3, body.recentQuestions || [], body.feedback || [], body.stage || 'stage1');
     } else if (action === 'check-all') {
-      return await checkAll(CLAUDE_API_KEY, body.items);
+      return await checkAll(CLAUDE_API_KEY, body.items, body.stage || 'stage1');
     } else {
       return {
         statusCode: 400,
@@ -36,12 +36,7 @@ exports.handler = async (event) => {
   }
 };
 
-async function generateAll(apiKey, count, recentQuestions, feedback) {
-  const systemPrompt = `You are a BHS (British Horse Society) Stage 1 exam question writer. You create clear, fair questions that test practical knowledge at Stage 1 level.
-
-TOPIC AREAS AND SUB-TOPICS — draw from across this full range:
-
-Horse Health: normal vital signs (TPR: temp 37.5-38.5°C, pulse 28-40bpm, resp 8-14), signs of good vs poor health, common ailments (colic signs, laminitis, mud fever, thrush, rain scald), when to call the vet, basic wound care, worming
+const STAGE_1_TOPICS = `Horse Health: normal vital signs (TPR: temp 37.5-38.5°C, pulse 28-40bpm, resp 8-14), signs of good vs poor health, common ailments (colic signs, laminitis, mud fever, thrush, rain scald), when to call the vet, basic wound care, worming
 
 Feeding & Watering: rules of feeding (little and often, feed according to work, make no sudden changes, feed at regular times, water before feeding), types of feed (hay, haylage, hard feed, chaff, sugar beet), clean fresh water always available, how the digestive system works (hindgut fermenters, small stomach)
 
@@ -59,14 +54,68 @@ Riding Theory: mounting and dismounting, correct riding position, natural aids (
 
 Points of the Horse: naming body parts (poll, crest, withers, loins, dock, fetlock, pastern, coronet, hock, stifle, chestnut, ergot), colours (bay, chestnut, grey, black, palomino, dun, roan, piebald, skewbald), facial markings (star, stripe, blaze, snip, white face), leg markings (sock, stocking, ermine marks)
 
-Safety & Handling: leading in hand (walk on left, lead rope in right hand), tying up safely (quick-release knot, tie to string not solid ring), catching in the field, turning a horse out, passing behind safely
+Safety & Handling: leading in hand (walk on left, lead rope in right hand), tying up safely (quick-release knot, tie to string not solid ring), catching in the field, turning a horse out, passing behind safely`;
+
+const STAGE_2_TOPICS = `Assistant Groom Roles: responsibilities, horse welfare duties, emergency procedures, legal requirements (employment rights, health & safety, safeguarding, data protection)
+
+Tack & Boot Fitting: snaffle types and fitting, noseband adjustment, breastplate, saddle fitting checks (spine clearance, width, pinching, level positioning), brushing boots, overreach boots
+
+Horse Travel: travel equipment (head collar, boots, tail guard, bandage, rug), safe loading and handling, behaviour awareness during travel
+
+Horse Behaviour: normal behaviour patterns (relaxed, eating, drinking, instinctive), signs of unsettled horses (flight response, calling, fidgeting, sweating, breathing changes, withdrawal), causes of stress (separation, confinement, anxiety, environment change, illness)
+
+Feeding & Weight Management: weight assessment (weighbridge, weigh tape, visual estimation, body condition scoring), calculating feed amounts (2% of bodyweight), feed charts, adjusting for maintenance/light/moderate work, factors affecting weight (type, age, workload, health, season)
+
+Horse Anatomy: digestive system (teeth, mouth, oesophagus, stomach, small intestine, large intestine, caecum, rectum), key organ locations (heart, lungs, kidneys, stomach), skeletal system (skull, cervical/thoracic/lumbar vertebrae, ribs, limb bones, sesamoid, pastern, navicular, pedal bone)
+
+Horse Fitness: recognising unfit signs (soft condition, slow recovery, lethargy, early fatigue, raised respiration), importance of fitness (welfare, injury prevention, performance)
+
+Health & First Aid: routine health procedures (worming programmes, vaccination schedules, dental care, shoeing cycles), administering oral treatments, lameness signs (weight-bearing reluctance, toe-pointing, head nodding, uneven stride), wound types (puncture, open, graze, bruise, pressure sore), wound first aid (cleaning, cold hosing, poulticing, tubbing), stable bandage application, when to call the vet (uncontrollable bleeding, severe wounds, colic, sudden lameness, abnormal behaviour, eye injuries), common conditions (colic types, acute skin conditions, respiratory issues, laminitis), caring for an unwell horse (monitoring, rest, hydration, diet, isolation, record-keeping)
+
+Horse Presentation: trimming (manes, tails, feathers, jaw, bridle path), mane plaiting technique (dampening, sectioning, tension, bands)
+
+Hoof Care: reasons for shoeing/trimming (protection, balance, growth), shoe removal tools and technique, signs of a well-maintained foot (level foot, correct axis, secure shoe, flush clenches, level wall)
+
+Horse Environment: turnout requirements (fencing, gates, water, shelter, forage), field hazards (unsafe fencing, litter, poisonous plants — ragwort, foxglove, yew, sycamore, oak, laburnum, deadly nightshade — security, public access), stable requirements (size, fittings, doors, windows, ventilation, bedding, drainage), stable hazards (protrusions, floor surface, insufficient bedding, poor ventilation)
+
+Lungeing: reasons for lungeing, equipment (cavesson, side-reins, roller, lunge line, lunge whip), fitting and removing equipment, securing stirrups for lungeing, lunge technique (line handling, coiling), evaluating a lunge session`;
+
+function getStageLabel(stage) {
+  if (stage === 'stage2') return 'BHS Stage 2';
+  if (stage === 'both') return 'BHS Stage 1 & 2';
+  return 'BHS Stage 1';
+}
+
+function getStagePitch(stage) {
+  if (stage === 'stage2') return 'intermediate yard management and horse care';
+  if (stage === 'both') return 'foundational and intermediate practical horsemanship';
+  return 'foundational practical horsemanship';
+}
+
+function getTopicBlock(stage) {
+  if (stage === 'stage2') return STAGE_2_TOPICS;
+  if (stage === 'both') return `STAGE 1 TOPICS:\n\n${STAGE_1_TOPICS}\n\nSTAGE 2 TOPICS:\n\n${STAGE_2_TOPICS}`;
+  return STAGE_1_TOPICS;
+}
+
+async function generateAll(apiKey, count, recentQuestions, feedback, stage) {
+  const stageLabel = getStageLabel(stage);
+  const stagePitch = getStagePitch(stage);
+  const topicBlock = getTopicBlock(stage);
+  const mixInstruction = stage === 'both' ? '\n- Mix questions across BOTH Stage 1 and Stage 2 topics. Aim for a roughly even split.' : '';
+
+  const systemPrompt = `You are a ${stageLabel} exam question writer. You create clear, fair questions that test practical knowledge at ${stagePitch} level.
+
+TOPIC AREAS AND SUB-TOPICS — draw from across this full range:
+
+${topicBlock}
 
 ${recentQuestions.length > 0 ? `RECENTLY ASKED — DO NOT repeat these questions or close variations. Find DIFFERENT angles within each topic area:\n${recentQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\n` : ''}${feedback.length > 0 ? `QUIZ-TAKER FEEDBACK — they flagged these past questions. Use this to improve future questions:\n${feedback.map((f, i) => `${i + 1}. Question: "${f.question}" — Feedback: "${f.note}"`).join('\n')}\n\n` : ''}RULES:
-- Generate exactly ${count} questions spread ACROSS the sub-topics above. Do not cluster on one area.
+- Generate exactly ${count} questions spread ACROSS the sub-topics above. Do not cluster on one area.${mixInstruction}
 - AVOID repeating questions from the "RECENTLY ASKED" list above. If a topic was recently covered, ask about a DIFFERENT sub-topic or angle within that area.
 - If count exceeds 10 topic areas, reuse topics but always vary the specific sub-topic.
 - Create a MIX of question types: roughly half multiple-choice and half open-ended. Vary the mix each time.
-- Pitch at BHS Stage 1 level: foundational practical horsemanship, not advanced.
+- Pitch at ${stagePitch} level, not advanced.
 - Include some scenario-based questions, e.g. "You arrive at the yard and notice a horse is sweating, pawing the ground, and looking at its flanks. What might be wrong and what should you do?"
 
 For MULTIPLE-CHOICE questions, use type "mc":
@@ -114,7 +163,7 @@ Open shape: { "type": "open", "topic": string, "question": string, "expectedAnsw
       max_tokens: 4000,
       system: systemPrompt,
       messages: [
-        { role: 'user', content: `Generate ${count} BHS Stage 1 questions on different topics. Mix multiple-choice and open-ended.` }
+        { role: 'user', content: `Generate ${count} ${stageLabel} questions on different topics. Mix multiple-choice and open-ended.` }
       ]
     })
   });
@@ -136,7 +185,7 @@ Open shape: { "type": "open", "topic": string, "question": string, "expectedAnsw
   };
 }
 
-async function checkAll(apiKey, items) {
+async function checkAll(apiKey, items, stage) {
   if (!items || items.length === 0) {
     return {
       statusCode: 200,
@@ -145,11 +194,13 @@ async function checkAll(apiKey, items) {
     };
   }
 
+  const stageLabel = getStageLabel(stage);
+
   const itemsList = items.map((item, i) =>
     `--- Question ${i + 1} ---\nQuestion: ${item.question}\nExpected answer: ${item.expectedAnswer}\nStudent's answer: ${item.userAnswer}`
   ).join('\n\n');
 
-  const systemPrompt = `You are a warm, encouraging BHS Stage 1 exam coach. You evaluate student answers against expected answers.
+  const systemPrompt = `You are a warm, encouraging ${stageLabel} exam coach. You evaluate student answers against expected answers.
 
 Rules:
 - "correct" means the student covered the key points, even if worded differently
